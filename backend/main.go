@@ -19,16 +19,22 @@ func main() {
 	ch := make(chan *PixelMap)
 	defer close(ch)
 
-	// the color red. yep.
-	colorRed := Color{255, 0, 0}
+	color := Color{0, 0, 255}
 
-	// initial map of one single but mighty pixel
-	pixels := []Pixel{
-		{
-			x:     300,
-			y:     300,
-			color: colorRed,
-		},
+	// initialize a grid of pixels for fun coordinate-based pattern development
+	pixels := []Pixel{}
+
+	var xPos int16
+	var yPos int16
+	xStart := 100
+	yStart := 100
+	spacing := 10
+	for i := 0; i < 40; i++ {
+		xPos = int16(xStart + i*spacing)
+		for j := 0; j < 40; j++ {
+			yPos = int16(yStart + j*spacing)
+			pixels = append(pixels, Pixel{x: xPos, y: yPos, color: color})
+		}
 	}
 
 	pixelMap := PixelMap{
@@ -37,12 +43,11 @@ func main() {
 
 	/*
 		starting with just one single pattern and no ability to change patterns
-		solid color is nice because no matter how many pixels we have, we can uniformly
-		set them all to the same color, which makes this an excellent initial test case
 	*/
-	currentPattern := SolidColorPattern{
-		pixelMap: &pixelMap,
-		color:    colorRed,
+	currentPattern := SolidColorFadePattern{
+		pixelMap:   &pixelMap,
+		currentHue: 0.0, // effectively red
+		speed:      1,
 	}
 
 	/*

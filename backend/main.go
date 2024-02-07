@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
 	"net/http"
@@ -50,6 +51,12 @@ func main() {
 		speed:      1,
 	}
 
+	universes := setupSACN()
+	for _, universe := range universes {
+		defer close(universe)
+	}
+	bytes := make([]byte, 512)
+
 	/*
 		our primarily loop. effectively, we want to parse input, update the pixel map, and display
 		the new map. for now, this will be a crude and brute force implementation where we send
@@ -63,10 +70,14 @@ func main() {
 			// update pixel map
 			currentPattern.Update()
 
-			// this will block until we have a websocket to receive this data
-			ch <- &pixelMap
+			// absolutely random LED color pattern
+			rand.Read(bytes)
+			for _, universe := range universes {
+				universe <- bytes
+			}
 
-			// TODO: render to physical device
+			// this will block until we have a websocket to receive this data
+			//ch <- &pixelMap
 		}
 	}()
 

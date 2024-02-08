@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"fmt"
 	"log"
 	"net/http"
@@ -20,26 +19,10 @@ func main() {
 	ch := make(chan *PixelMap)
 	defer close(ch)
 
-	color := Color{0, 0, 255}
-
-	// initialize a grid of pixels for fun coordinate-based pattern development
-	pixels := []Pixel{}
-
-	var xPos int16
-	var yPos int16
-	xStart := 100
-	yStart := 100
-	spacing := 10
-	for i := 0; i < 40; i++ {
-		xPos = int16(xStart + i*spacing)
-		for j := 0; j < 40; j++ {
-			yPos = int16(yStart + j*spacing)
-			pixels = append(pixels, Pixel{x: xPos, y: yPos, color: color})
-		}
-	}
+	color := Color{r: 0, g: 0, b: 255}
 
 	pixelMap := PixelMap{
-		pixels: &pixels,
+		pixels: build2ChannelsOfPixels(),
 	}
 
 	/*
@@ -55,7 +38,19 @@ func main() {
 	for _, universe := range universes {
 		defer close(universe)
 	}
-	bytes := make([]byte, 512)
+
+	// we're currently using the paradigm of DMX over ethernet, so we think about the world
+	// in terms of universes == channels. for that reason, we're going to denormalize our pixel
+	// map a little bit by creating a map of pointers to pixels. this will save us a ton of compute
+	// cycles when we go to send the data over the wire, because this map will be the ordered
+	// representation by universe/channel of each pixel position, eliminating the need for
+	// expensive lookups
+
+	pixelsByUniverse := make(map[uint16][]*Pixel)
+
+	for _, pixel := range *pixelMap.pixels {
+		pixelsByUniverse[pixel.universe] = append(pixelsByUniverse[pixel.universe], &pixel)
+	}
 
 	/*
 		our primarily loop. effectively, we want to parse input, update the pixel map, and display
@@ -70,14 +65,18 @@ func main() {
 			// update pixel map
 			currentPattern.Update()
 
-			// absolutely random LED color pattern
-			rand.Read(bytes)
-			for _, universe := range universes {
+			for i, universe := range universes {
+				bytes := make([]byte, 512)
+				for _, pixel := range pixelsByUniverse[i] {
+					startIndex := pixel.channelPosition*3 - 1
+					endIndex := pixel.channelPosition*3 + 2
+					copy(bytes[startIndex:endIndex], color.toString())
+				}
 				universe <- bytes
 			}
 
 			// this will block until we have a websocket to receive this data
-			//ch <- &pixelMap
+			ch <- &pixelMap
 		}
 	}()
 

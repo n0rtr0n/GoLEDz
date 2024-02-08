@@ -9,10 +9,22 @@ type Color struct {
 	b uint8
 }
 
+func (c *Color) toString() []byte {
+	return []byte{
+		byte(c.r),
+		byte(c.g),
+		byte(c.b),
+		// 0x00,
+	}
+}
+
 type Pixel struct {
-	x     int16
-	y     int16
-	color Color
+	x               int16
+	y               int16
+	color           Color
+	universe        uint16
+	channel         uint16
+	channelPosition uint16
 }
 
 type PixelMap struct {

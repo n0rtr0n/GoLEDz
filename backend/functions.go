@@ -26,14 +26,14 @@ func build2ChannelsOfPixels() *[]Pixel {
 	yStart := 200
 	spacing := 10
 	// just two channels for now
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 150; i++ {
 		xPos := int16(xStart + i*spacing)
 
 		y1Pos := int16(yStart)
 		y2Pos := int16(yStart + 20)
 
 		pixels = append(pixels, Pixel{x: xPos, y: y1Pos, universe: 1, channelPosition: uint16(i + 1)})
-		pixels = append(pixels, Pixel{x: xPos, y: y2Pos, universe: 2, channelPosition: uint16(i + 1)})
+		pixels = append(pixels, Pixel{x: xPos, y: y2Pos, universe: 3, channelPosition: uint16(i + 1)})
 	}
 	return &pixels
 }

@@ -19,8 +19,6 @@ func main() {
 	ch := make(chan *PixelMap)
 	defer close(ch)
 
-	color := Color{r: 0, g: 0, b: 255}
-
 	pixelMap := PixelMap{
 		pixels: build2ChannelsOfPixels(),
 	}
@@ -45,11 +43,10 @@ func main() {
 	// cycles when we go to send the data over the wire, because this map will be the ordered
 	// representation by universe/channel of each pixel position, eliminating the need for
 	// expensive lookups
-
 	pixelsByUniverse := make(map[uint16][]*Pixel)
 
-	for _, pixel := range *pixelMap.pixels {
-		pixelsByUniverse[pixel.universe] = append(pixelsByUniverse[pixel.universe], &pixel)
+	for i, pixel := range *pixelMap.pixels {
+		pixelsByUniverse[pixel.universe] = append(pixelsByUniverse[pixel.universe], &(*pixelMap.pixels)[i])
 	}
 
 	/*
@@ -68,10 +65,12 @@ func main() {
 			for i, universe := range universes {
 				bytes := make([]byte, 512)
 				for _, pixel := range pixelsByUniverse[i] {
-					startIndex := pixel.channelPosition*3 - 1
-					endIndex := pixel.channelPosition*3 + 2
-					copy(bytes[startIndex:endIndex], color.toString())
+					pos := pixel.channelPosition - 1
+					startIndex := pos * 3
+					endIndex := startIndex + 3
+					copy(bytes[startIndex:endIndex], pixel.color.toString())
 				}
+
 				universe <- bytes
 			}
 

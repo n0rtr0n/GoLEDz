@@ -6,6 +6,9 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
+// controller-specific limitation when not running in expanded mode
+const MAX_PIXEL_LENGTH = 340
+
 type Pattern interface {
 	Update()
 }
@@ -34,4 +37,27 @@ func (p *SolidColorFadePattern) Update() {
 		(*p.pixelMap.pixels)[i].color = color
 	}
 	p.currentHue = math.Mod(p.currentHue+p.speed, 360)
+}
+
+type ChaserPattern struct {
+	pixelMap        *PixelMap
+	color           Color
+	size            uint16
+	spacing         uint16
+	speed           float64
+	currentPosition float64
+}
+
+// TODO: add direction
+// TODO: add brightness taper on either end
+func (p *ChaserPattern) Update() {
+	for i, pixel := range *p.pixelMap.pixels {
+		if (pixel.channelPosition+uint16(p.currentPosition))%(p.size+p.spacing) < p.size {
+			(*p.pixelMap.pixels)[i].color = p.color
+		} else {
+			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
+		}
+	}
+	p.currentPosition += p.speed
+	p.currentPosition = math.Mod(p.currentPosition, MAX_PIXEL_LENGTH)
 }

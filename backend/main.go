@@ -19,10 +19,13 @@ func main() {
 	}
 
 	// starting with just one single pattern and no ability to change patterns
-	currentPattern := SolidColorFadePattern{
-		pixelMap:   &pixelMap,
-		currentHue: 0.0, // effectively red
-		speed:      1,
+	currentPattern := ChaserPattern{
+		pixelMap:        &pixelMap,
+		speed:           1.5,
+		currentPosition: 1.0,
+		size:            3,
+		spacing:         3,
+		color:           Color{255, 255, 255},
 	}
 
 	universes := setupSACN()

@@ -14,7 +14,6 @@ func (c *Color) toString() []byte {
 		byte(c.r),
 		byte(c.g),
 		byte(c.b),
-		// 0x00,
 	}
 }
 
@@ -23,7 +22,6 @@ type Pixel struct {
 	y               int16
 	color           Color
 	universe        uint16
-	channel         uint16
 	channelPosition uint16
 }
 

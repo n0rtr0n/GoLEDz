@@ -9,13 +9,8 @@ import (
 
 func main() {
 
-	/*
-		first goal is to light up ONE pixel. let's call it red
-		1. send the pixel to the websocket location so we can see it digitally
-		2. use a very simple implementation of an e1.31/sACN library so we can see it physically
-	*/
-
-	// channel for websocket connections
+	// websocket connections. will no longer block if we're not connected to a websocket
+	var subscribers []chan *PixelMap
 	ch := make(chan *PixelMap)
 	defer close(ch)
 
@@ -23,9 +18,7 @@ func main() {
 		pixels: build2ChannelsOfPixels(),
 	}
 
-	/*
-		starting with just one single pattern and no ability to change patterns
-	*/
+	// starting with just one single pattern and no ability to change patterns
 	currentPattern := SolidColorFadePattern{
 		pixelMap:   &pixelMap,
 		currentHue: 0.0, // effectively red
@@ -37,12 +30,14 @@ func main() {
 		defer close(universe)
 	}
 
-	// we're currently using the paradigm of DMX over ethernet, so we think about the world
-	// in terms of universes == channels. for that reason, we're going to denormalize our pixel
-	// map a little bit by creating a map of pointers to pixels. this will save us a ton of compute
-	// cycles when we go to send the data over the wire, because this map will be the ordered
-	// representation by universe/channel of each pixel position, eliminating the need for
-	// expensive lookups
+	/*
+		we're currently using the paradigm of DMX over ethernet, so we think about the world
+		in terms of universes == channels. for that reason, we're going to denormalize our pixel
+		map a little bit by creating a map of pointers to pixels. this will save us a ton of compute
+		cycles when we go to send the data over the wire, because this map will be the ordered
+		representation by universe/channel of each pixel position, eliminating the need for
+		expensive lookups
+	*/
 	pixelsByUniverse := make(map[uint16][]*Pixel)
 
 	for i, pixel := range *pixelMap.pixels {
@@ -74,8 +69,9 @@ func main() {
 				universe <- bytes
 			}
 
-			// this will block until we have a websocket to receive this data
-			ch <- &pixelMap
+			for _, subscriber := range subscribers {
+				subscriber <- &pixelMap
+			}
 		}
 	}()
 
@@ -83,10 +79,11 @@ func main() {
 	http.HandleFunc("/socket", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("establishing websocket connection handler")
 		socketHandler(w, r, ch)
+		subscribers = append(subscribers, ch)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello world")
+		fmt.Fprintf(w, "GoLEDz web server")
 	})
 
 	fmt.Println("starting webserver")

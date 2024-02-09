@@ -26,7 +26,7 @@ func build2ChannelsOfPixels() *[]Pixel {
 	yStart := 200
 	spacing := 10
 	// just two channels for now
-	for i := 0; i < 150; i++ {
+	for i := 0; i < 100; i++ {
 		xPos := int16(xStart + i*spacing)
 
 		y1Pos := int16(yStart)

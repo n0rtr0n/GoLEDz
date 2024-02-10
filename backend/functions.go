@@ -22,9 +22,9 @@ func buildPixelGrid() *[]Pixel {
 func build2ChannelsOfPixels() *[]Pixel {
 	pixels := []Pixel{}
 
-	xStart := 200
+	xStart := 100
 	yStart := 200
-	spacing := 10
+	spacing := 5
 	// just two channels for now
 	for i := 0; i < 100; i++ {
 		xPos := int16(xStart + i*spacing)

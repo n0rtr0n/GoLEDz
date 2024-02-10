@@ -61,3 +61,20 @@ func (p *ChaserPattern) Update() {
 	p.currentPosition += p.speed
 	p.currentPosition = math.Mod(p.currentPosition, MAX_PIXEL_LENGTH)
 }
+
+type RainbowPattern struct {
+	pixelMap   *PixelMap
+	currentHue float64
+	speed      float64
+}
+
+func (p *RainbowPattern) Update() {
+	for i, pixel := range *p.pixelMap.pixels {
+		hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), 360)
+		c := colorful.Hsv(hueVal, 1.0, 1.0)
+		color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
+
+		(*p.pixelMap.pixels)[i].color = color
+	}
+	p.currentHue = math.Mod(p.currentHue+p.speed, 360)
+}

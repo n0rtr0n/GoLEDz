@@ -78,3 +78,21 @@ func (p *RainbowPattern) Update() {
 	}
 	p.currentHue = math.Mod(p.currentHue+p.speed, 360)
 }
+
+type RainbowDiagonalPattern struct {
+	pixelMap   *PixelMap
+	currentHue float64
+	speed      float64
+}
+
+// TODO: add size, direction, and orientation
+func (p *RainbowDiagonalPattern) Update() {
+	for i, pixel := range *p.pixelMap.pixels {
+		hueVal := math.Mod(p.currentHue+float64(pixel.x+pixel.y), 360)
+		c := colorful.Hsv(hueVal, 1.0, 1.0)
+		color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
+
+		(*p.pixelMap.pixels)[i].color = color
+	}
+	p.currentHue = math.Mod(p.currentHue+p.speed, 360)
+}

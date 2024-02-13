@@ -15,14 +15,14 @@ func main() {
 	defer close(ch)
 
 	pixelMap := PixelMap{
-		pixels: build2ChannelsOfPixels(),
+		pixels: buildPixelGrid(),
 	}
 
 	// starting with just one single pattern and no ability to change patterns
-	currentPattern := RainbowPattern{
+	currentPattern := RainbowDiagonalPattern{
 		pixelMap:   &pixelMap,
 		currentHue: 0.0,
-		speed:      2.0,
+		speed:      10.0,
 	}
 
 	universes := setupSACN()

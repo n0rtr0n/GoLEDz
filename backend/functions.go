@@ -8,12 +8,12 @@ func buildPixelGrid() *[]Pixel {
 	var yPos int16
 	xStart := 100
 	yStart := 100
-	spacing := 10
-	for i := 0; i < 10; i++ {
+	spacing := 20
+	for i := 0; i < 20; i++ {
 		xPos = int16(xStart + i*spacing)
-		for j := 0; j < 10; j++ {
+		for j := 0; j < 20; j++ {
 			yPos = int16(yStart + j*spacing)
-			pixels = append(pixels, Pixel{x: xPos, y: yPos})
+			pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: uint16(i + 1), channelPosition: uint16(j + 1)})
 		}
 	}
 	return &pixels
@@ -26,7 +26,7 @@ func build2ChannelsOfPixels() *[]Pixel {
 	yStart := 200
 	spacing := 5
 	// just two channels for now
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 150; i++ {
 		xPos := int16(xStart + i*spacing)
 
 		y1Pos := int16(yStart)

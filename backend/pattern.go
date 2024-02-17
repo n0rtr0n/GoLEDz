@@ -93,6 +93,7 @@ func (p *RainbowDiagonalPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 
 		position := float64(pixel.x + pixel.y)
+
 		hueVal := math.Mod(p.currentHue+position, MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
 		color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
@@ -102,7 +103,8 @@ func (p *RainbowDiagonalPattern) Update() {
 
 	var hue float64
 	if p.reversed {
-		hue = p.currentHue - p.speed
+		// ensures that this value will not dip below 0
+		hue = MAX_HUE_VALUE + p.currentHue - p.speed
 	} else {
 		hue = p.currentHue + p.speed
 	}

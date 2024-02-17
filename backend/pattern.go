@@ -8,6 +8,7 @@ import (
 
 // controller-specific limitation when not running in expanded mode
 const MAX_PIXEL_LENGTH = 340
+const MAX_HUE_VALUE = 360
 
 type Pattern interface {
 	Update()
@@ -36,7 +37,7 @@ func (p *SolidColorFadePattern) Update() {
 	for i := range *p.pixelMap.pixels {
 		(*p.pixelMap.pixels)[i].color = color
 	}
-	p.currentHue = math.Mod(p.currentHue+p.speed, 360)
+	p.currentHue = math.Mod(p.currentHue+p.speed, MAX_HUE_VALUE)
 }
 
 type ChaserPattern struct {
@@ -70,29 +71,40 @@ type RainbowPattern struct {
 
 func (p *RainbowPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
-		hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), 360)
+		hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
 		color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
 
 		(*p.pixelMap.pixels)[i].color = color
 	}
-	p.currentHue = math.Mod(p.currentHue+p.speed, 360)
+	p.currentHue = math.Mod(p.currentHue+p.speed, MAX_HUE_VALUE)
 }
 
 type RainbowDiagonalPattern struct {
 	pixelMap   *PixelMap
 	currentHue float64
 	speed      float64
+	reversed   bool
 }
 
-// TODO: add size, direction, and orientation
+// TODO: add size, and orientation
+// TODO: slight hiccup at the end of this pattern's iteration
 func (p *RainbowDiagonalPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
-		hueVal := math.Mod(p.currentHue+float64(pixel.x+pixel.y), 360)
+
+		position := float64(pixel.x + pixel.y)
+		hueVal := math.Mod(p.currentHue+position, MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
 		color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
 
 		(*p.pixelMap.pixels)[i].color = color
 	}
-	p.currentHue = math.Mod(p.currentHue+p.speed, 360)
+
+	var hue float64
+	if p.reversed {
+		hue = p.currentHue - p.speed
+	} else {
+		hue = p.currentHue + p.speed
+	}
+	p.currentHue = math.Mod(hue, MAX_HUE_VALUE)
 }

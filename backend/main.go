@@ -23,6 +23,7 @@ func main() {
 		pixelMap:   &pixelMap,
 		currentHue: 0.0,
 		speed:      10.0,
+		reversed:   true,
 	}
 
 	universes := setupSACN()

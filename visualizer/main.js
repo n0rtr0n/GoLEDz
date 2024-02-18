@@ -1,5 +1,4 @@
-// Create a WebSocket connection
-const socket = new WebSocket('ws://127.0.0.1:8008/socket');
+let ws;
 const pixelVisibility = 255
 
 const canvas = document.getElementById("canvas");
@@ -7,19 +6,34 @@ const $ctx = canvas.getContext("2d");
 $ctx.fillStyle = "#000000";
 $ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// Set up event listeners
-socket.addEventListener('open', (event) => {
-  console.log('WebSocket connection opened:', event);
-});
+function connectWebSocket() {
+    ws = new WebSocket('ws://127.0.0.1:8008/socket');
 
-socket.addEventListener('message', (event) => {
-  const message = event.data;
-  processMessage(message);
-});
+    ws.onopen = function() {
+        console.log('WebSocket connection established.');
+    };
 
-socket.addEventListener('close', (event) => {
-  console.log('WebSocket connection closed:', event);
-});
+    ws.onclose = function(event) {
+        console.log('WebSocket connection closed.');
+
+        // Reconnect only if the connection is closed, not if it's in the process of closing.
+        if (event.code !== 1000) {
+            console.log('Reconnecting...');
+            setTimeout(connectWebSocket, 5000); // Retry after 5 seconds
+        }
+    };
+
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+    };
+
+    ws.onmessage = function(event) {
+      const message = event.data;
+      processMessage(message);
+    };
+}
+
+connectWebSocket();
 
 const processMessage = (event) => {
   const dataFromServer = JSON.parse(event);

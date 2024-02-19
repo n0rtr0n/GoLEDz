@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	// websocket connections. will no longer block if we're not connected to a websocket
 	var subscribers []chan *PixelMap
 	ch := make(chan *PixelMap)
@@ -18,13 +17,26 @@ func main() {
 		pixels: buildPixelGrid(),
 	}
 
-	// starting with just one single pattern and no ability to change patterns
-	currentPattern := RainbowDiagonalPattern{
+	// register patterns
+	patterns := make(map[string]Pattern)
+
+	rainbowPattern := RainbowPattern{
+		pixelMap:   &pixelMap,
+		speed:      1.0,
+		currentHue: 1.0,
+	}
+	rainbowDiagonalPattern := RainbowDiagonalPattern{
 		pixelMap:   &pixelMap,
 		currentHue: 0.0,
 		speed:      10.0,
 		reversed:   true,
 	}
+
+	patterns["rainbow"] = &rainbowPattern
+	patterns["rainbowDiagonal"] = &rainbowDiagonalPattern
+
+	// starting with just one single pattern and no ability to change patterns
+	currentPattern := patterns["rainbow"]
 
 	universes := setupSACN()
 	for _, universe := range universes {
@@ -93,8 +105,14 @@ func main() {
 	// i don't think i need gorilla/mux or gin to build a REST API
 	// this endpoint will allow us to update the current pattern and/or pattern params
 	mux.HandleFunc("PUT /pattern/{pattern}", func(w http.ResponseWriter, r *http.Request) {
-		pattern := r.PathValue("pattern")
-		fmt.Println("new pattern", pattern)
+		patternName := r.PathValue("pattern")
+		pattern, ok := patterns[patternName]
+		if !ok {
+			fmt.Println(patternName, " not found in registered patterns, skipping update")
+			return
+		}
+		fmt.Println("new pattern", patternName)
+		currentPattern = pattern
 	})
 
 	fmt.Println("starting webserver")

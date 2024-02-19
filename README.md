@@ -2,6 +2,14 @@
 
 GoLEDz is a Go-based backend for controlling LEDs. It also includes a web-based visualizer for viewing patterns in development, without the need for a physical device.
 
+# Visualizer
+
+The visualizer allows you to preview patterns on a development device through a browser.
+
+![Rainbow Diagonal on visualizer](assets/rainbowdiagonal.gif)
+
+It is currently recommended to use FireFox or Safari, as the current method for drawing to a canvas is VERY slow in Chrome.
+
 # Development
 
 ## Dependencies

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -31,9 +32,15 @@ func main() {
 		speed:      10.0,
 		reversed:   true,
 	}
+	solidColorFadePattern := SolidColorFadePattern{
+		pixelMap:   &pixelMap,
+		currentHue: 0.0,
+		speed:      5.0,
+	}
 
 	patterns["rainbow"] = &rainbowPattern
 	patterns["rainbowDiagonal"] = &rainbowDiagonalPattern
+	patterns["solidColorFade"] = &solidColorFadePattern
 
 	// starting with just one single pattern and no ability to change patterns
 	currentPattern := patterns["rainbow"]
@@ -91,20 +98,30 @@ func main() {
 	mux := http.NewServeMux()
 
 	// the websocket is primarily to feed our pixel map into the visualizer
-	mux.HandleFunc("/socket", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /socket", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("establishing websocket connection handler")
 		socketHandler(w, r, ch)
 		subscribers = append(subscribers, ch)
 	})
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "GoLEDz web server")
+	mux.HandleFunc("GET /patterns", func(w http.ResponseWriter, r *http.Request) {
+		patternsList := []string{}
+		for k, _ := range patterns {
+			patternsList = append(patternsList, k)
+		}
+		jsonData, err := json.Marshal(patternsList)
+		if err != nil {
+			fmt.Printf("could not marshal json: %s\n", err)
+			return
+		}
+
+		fmt.Fprint(w, string(jsonData))
 	})
 
 	// this is pretty nice feature of go 1.22;
 	// i don't think i need gorilla/mux or gin to build a REST API
 	// this endpoint will allow us to update the current pattern and/or pattern params
-	mux.HandleFunc("PUT /pattern/{pattern}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("PUT /patterns/{pattern}", func(w http.ResponseWriter, r *http.Request) {
 		patternName := r.PathValue("pattern")
 		pattern, ok := patterns[patternName]
 		if !ok {
@@ -113,6 +130,10 @@ func main() {
 		}
 		fmt.Println("new pattern", patternName)
 		currentPattern = pattern
+	})
+
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "GoLEDz web server")
 	})
 
 	fmt.Println("starting webserver")

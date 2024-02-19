@@ -25,7 +25,7 @@ $ npm install
 ```
 
 ## Running the project
-To run the project, first navigate into the `backend`, then run the go project
+To run the project, first navigate into the `backend`, then run the go project:
 
 ```
 $ cd backend
@@ -37,4 +37,19 @@ To run the visualizer, navigate to the `vizualizer` directory and run the Vite d
 ```
 $ cd visualizer
 $ npm run dev
+```
+
+## Live Reload
+
+To enable live reload upon changes to the backend code, [air](https://github.com/cosmtrek/air) is recommended.
+
+To install:
+```
+$ go install github.com/cosmtrek/air@latest
+```
+
+To run:
+```
+$ cd backend
+$ air
 ```

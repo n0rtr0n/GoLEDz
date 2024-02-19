@@ -76,17 +76,27 @@ func main() {
 		}
 	}()
 
+	mux := http.NewServeMux()
+
 	// the websocket is primarily to feed our pixel map into the visualizer
-	http.HandleFunc("/socket", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/socket", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("establishing websocket connection handler")
 		socketHandler(w, r, ch)
 		subscribers = append(subscribers, ch)
 	})
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "GoLEDz web server")
 	})
 
+	// this is pretty nice feature of go 1.22;
+	// i don't think i need gorilla/mux or gin to build a REST API
+	// this endpoint will allow us to update the current pattern and/or pattern params
+	mux.HandleFunc("PUT /pattern/{pattern}", func(w http.ResponseWriter, r *http.Request) {
+		pattern := r.PathValue("pattern")
+		fmt.Println("new pattern", pattern)
+	})
+
 	fmt.Println("starting webserver")
-	log.Fatal(http.ListenAndServe(":8008", nil))
+	log.Fatal(http.ListenAndServe(":8008", mux))
 }

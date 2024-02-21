@@ -85,6 +85,7 @@ type RainbowDiagonalPattern struct {
 	currentHue float64
 	speed      float64
 	reversed   bool
+	size       float64
 }
 
 // TODO: add size, and orientation
@@ -92,7 +93,7 @@ type RainbowDiagonalPattern struct {
 func (p *RainbowDiagonalPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 
-		position := float64(pixel.x + pixel.y)
+		position := float64(pixel.x+pixel.y) * p.size
 
 		hueVal := math.Mod(p.currentHue+position, MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)

@@ -29,8 +29,9 @@ func main() {
 	rainbowDiagonalPattern := RainbowDiagonalPattern{
 		pixelMap:   &pixelMap,
 		currentHue: 0.0,
-		speed:      10.0,
+		speed:      6.0,
 		reversed:   true,
+		size:       0.5,
 	}
 	solidColorFadePattern := SolidColorFadePattern{
 		pixelMap:   &pixelMap,
@@ -43,7 +44,7 @@ func main() {
 	patterns["solidColorFade"] = &solidColorFadePattern
 
 	// starting with just one single pattern and no ability to change patterns
-	currentPattern := patterns["rainbow"]
+	currentPattern := patterns["rainbowDiagonal"]
 
 	universes := setupSACN()
 	for _, universe := range universes {
@@ -105,11 +106,14 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /patterns", func(w http.ResponseWriter, r *http.Request) {
-		patternsList := []string{}
+		patternsList := []map[string]string{}
 		for k, _ := range patterns {
-			patternsList = append(patternsList, k)
+			patternsList = append(patternsList, map[string]string{"id": k})
 		}
-		jsonData, err := json.Marshal(patternsList)
+
+		patternsRoot := make(map[string][]map[string]string)
+		patternsRoot["patterns"] = patternsList
+		jsonData, err := json.Marshal(patternsRoot)
 		if err != nil {
 			fmt.Printf("could not marshal json: %s\n", err)
 			return

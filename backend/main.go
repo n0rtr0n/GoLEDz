@@ -38,13 +38,20 @@ func main() {
 		currentHue: 0.0,
 		speed:      5.0,
 	}
+	verticalStripesPattern := VerticalStripesPattern{
+		pixelMap: &pixelMap,
+		color:    Color{r: 255, g: 0, b: 255}, // purple
+		speed:    10.0,
+		size:     20.0,
+	}
 
 	patterns["rainbow"] = &rainbowPattern
 	patterns["rainbowDiagonal"] = &rainbowDiagonalPattern
 	patterns["solidColorFade"] = &solidColorFadePattern
+	patterns["verticalStripes"] = &verticalStripesPattern
 
 	// starting with just one single pattern and no ability to change patterns
-	currentPattern := patterns["rainbowDiagonal"]
+	currentPattern := patterns["verticalStripes"]
 
 	universes := setupSACN()
 	for _, universe := range universes {

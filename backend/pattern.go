@@ -10,6 +10,9 @@ import (
 const MAX_PIXEL_LENGTH = 340
 const MAX_HUE_VALUE = 360
 
+// abitrary for now; we'll calculate this later
+const MAX_X_POSITION = 600
+
 type Pattern interface {
 	Update()
 }
@@ -110,4 +113,27 @@ func (p *RainbowDiagonalPattern) Update() {
 		hue = p.currentHue + p.speed
 	}
 	p.currentHue = math.Mod(hue, MAX_HUE_VALUE)
+}
+
+type VerticalStripesPattern struct {
+	pixelMap        *PixelMap
+	color           Color
+	speed           float64
+	size            float64
+	currentPosition float64
+}
+
+func (p *VerticalStripesPattern) Update() {
+
+	min := int16(p.currentPosition - p.size)
+	max := int16(p.currentPosition + p.size)
+	for i, pixel := range *p.pixelMap.pixels {
+		if pixel.x > min && pixel.x < max {
+			(*p.pixelMap.pixels)[i].color = p.color
+		} else {
+			(*p.pixelMap.pixels)[i].color = Color{}
+		}
+	}
+
+	p.currentPosition = math.Mod(p.currentPosition+p.speed, MAX_X_POSITION)
 }

@@ -13,6 +13,7 @@ const MAX_HUE_VALUE = 360
 // abitrary for now; we'll calculate this later
 const MAX_X_POSITION = 600
 
+// TODO: return and handle any errors encountered in updating patterns
 type Pattern interface {
 	Update()
 }
@@ -36,7 +37,7 @@ type SolidColorFadePattern struct {
 
 func (p *SolidColorFadePattern) Update() {
 	c := colorful.Hsv(p.currentHue, 1.0, 1.0)
-	color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
+	color := Color{r: colorPigment(c.R * 255), g: colorPigment(c.G * 255), b: colorPigment(c.B * 255)}
 	for i := range *p.pixelMap.pixels {
 		(*p.pixelMap.pixels)[i].color = color
 	}
@@ -76,7 +77,7 @@ func (p *RainbowPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 		hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
-		color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
+		color := Color{r: colorPigment(c.R * 255), g: colorPigment(c.G * 255), b: colorPigment(c.B * 255)}
 
 		(*p.pixelMap.pixels)[i].color = color
 	}
@@ -100,7 +101,7 @@ func (p *RainbowDiagonalPattern) Update() {
 
 		hueVal := math.Mod(p.currentHue+position, MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
-		color := Color{r: uint8(c.R * 255), g: uint8(c.G * 255), b: uint8(c.B * 255)}
+		color := Color{r: colorPigment(c.R * 255), g: colorPigment(c.G * 255), b: colorPigment(c.B * 255)}
 
 		(*p.pixelMap.pixels)[i].color = color
 	}

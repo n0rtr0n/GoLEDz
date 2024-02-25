@@ -40,9 +40,9 @@ func main() {
 	}
 	verticalStripesPattern := VerticalStripesPattern{
 		pixelMap: &pixelMap,
-		color:    Color{r: 255, g: 0, b: 255}, // purple
-		speed:    10.0,
-		size:     20.0,
+		color:    Color{r: 255, g: 37, b: 126}, // purple
+		speed:    15.0,
+		size:     25.0,
 	}
 
 	patterns["rainbow"] = &rainbowPattern
@@ -132,6 +132,7 @@ func main() {
 	// this is pretty nice feature of go 1.22;
 	// i don't think i need gorilla/mux or gin to build a REST API
 	// this endpoint will allow us to update the current pattern and/or pattern params
+	// TODO: add http.Error handling vs printlines
 	mux.HandleFunc("PUT /patterns/{pattern}", func(w http.ResponseWriter, r *http.Request) {
 		patternName := r.PathValue("pattern")
 		pattern, ok := patterns[patternName]
@@ -139,6 +140,24 @@ func main() {
 			fmt.Println(patternName, " not found in registered patterns, skipping update")
 			return
 		}
+
+		type ParameterUpdateRequestBody struct {
+			Parameters []map[string]interface{} `json:"parameters"`
+		}
+
+		var body ParameterUpdateRequestBody
+		err := json.NewDecoder(r.Body).Decode(&body)
+		if err != nil {
+			fmt.Println("Invalid request body provided to pattern update: ", err)
+			return
+		}
+
+		for _, parameter := range body.Parameters {
+			for key, value := range parameter {
+				fmt.Printf("%s: %v\n", key, value)
+			}
+		}
+
 		fmt.Println("new pattern", patternName)
 		currentPattern = pattern
 	})

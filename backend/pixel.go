@@ -22,9 +22,9 @@ func (p *PixelMap) toJSON() ([]byte, error) {
 		newPixel := map[string]interface{}{
 			"x": pixel.x,
 			"y": pixel.y,
-			"r": pixel.color.r,
-			"g": pixel.color.g,
-			"b": pixel.color.b,
+			"r": pixel.color.R,
+			"g": pixel.color.G,
+			"b": pixel.color.B,
 		}
 		data = append(data, newPixel)
 	}

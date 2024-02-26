@@ -21,37 +21,81 @@ func main() {
 	// register patterns
 	patterns := make(map[string]Pattern)
 
-	rainbowPattern := RainbowPattern{
+	solidColorPattern := SolidColorPattern{
 		pixelMap:   &pixelMap,
-		speed:      1.0,
-		currentHue: 1.0,
-	}
-	rainbowDiagonalPattern := RainbowDiagonalPattern{
-		pixelMap:   &pixelMap,
-		currentHue: 0.0,
-		speed:      6.0,
-		reversed:   true,
-		size:       0.5,
-	}
-	solidColorFadePattern := SolidColorFadePattern{
-		pixelMap:   &pixelMap,
-		currentHue: 0.0,
-		speed:      5.0,
-	}
-	verticalStripesPattern := VerticalStripesPattern{
-		pixelMap: &pixelMap,
-		color:    Color{r: 255, g: 37, b: 126}, // purple
-		speed:    15.0,
-		size:     25.0,
+		parameters: AdjustableParameters{},
 	}
 
+	solidColorPattern.parameters["color"] = &ColorParameter{
+		value: Color{R: 0, G: 0, B: 255},
+	}
+
+	rainbowPattern := RainbowPattern{
+		pixelMap:   &pixelMap,
+		parameters: AdjustableParameters{},
+		currentHue: 1.0,
+	}
+	rainbowPattern.parameters["speed"] = &FloatParameter{
+		value: 1.0,
+		min:   0.1,
+		max:   360.0,
+	}
+
+	rainbowDiagonalPattern := RainbowDiagonalPattern{
+		pixelMap:   &pixelMap,
+		parameters: AdjustableParameters{},
+		currentHue: 0.0,
+	}
+	rainbowDiagonalPattern.parameters["speed"] = &FloatParameter{
+		value: 6.0,
+		min:   0.1,
+		max:   360.0,
+	}
+	rainbowDiagonalPattern.parameters["size"] = &FloatParameter{
+		value: 0.5,
+		min:   0.1,
+		max:   180.0,
+	}
+	rainbowDiagonalPattern.parameters["reversed"] = &BooleanParameter{
+		value: true,
+	}
+
+	solidColorFadePattern := SolidColorFadePattern{
+		pixelMap:   &pixelMap,
+		parameters: AdjustableParameters{},
+		currentHue: 0.0,
+	}
+	solidColorFadePattern.parameters["speed"] = &FloatParameter{
+		value: 5.0,
+		min:   0.1,
+		max:   360.0,
+	}
+	verticalStripesPattern := VerticalStripesPattern{
+		pixelMap:        &pixelMap,
+		parameters:      AdjustableParameters{},
+		currentPosition: 0.0,
+	}
+	verticalStripesPattern.parameters["color"] = &ColorParameter{
+		value: Color{R: 0, G: 0, B: 255},
+	}
+	verticalStripesPattern.parameters["size"] = &FloatParameter{
+		value: 25.0,
+		min:   0.1,
+		max:   360.0,
+	}
+	verticalStripesPattern.parameters["speed"] = &FloatParameter{
+		value: 15.0,
+		min:   0.1,
+		max:   360.0,
+	}
+
+	patterns["solidColor"] = &solidColorPattern
 	patterns["rainbow"] = &rainbowPattern
 	patterns["rainbowDiagonal"] = &rainbowDiagonalPattern
 	patterns["solidColorFade"] = &solidColorFadePattern
 	patterns["verticalStripes"] = &verticalStripesPattern
 
-	// starting with just one single pattern and no ability to change patterns
-	currentPattern := patterns["verticalStripes"]
+	currentPattern := patterns["rainbowDiagonal"]
 
 	universes := setupSACN()
 	for _, universe := range universes {
@@ -79,7 +123,7 @@ func main() {
 	*/
 	go func() {
 		for {
-			// we'll eventually handle frame rate. For now, we'll update up to 20 times/second
+			// TODO: we'll eventually handle frame rate. For now, we'll update up to 20 times/second
 			time.Sleep(50 * time.Millisecond)
 
 			// update pixel map
@@ -141,20 +185,91 @@ func main() {
 			return
 		}
 
-		type ParameterUpdateRequestBody struct {
-			Parameters []map[string]interface{} `json:"parameters"`
-		}
-
-		var body ParameterUpdateRequestBody
+		var body map[string]interface{}
 		err := json.NewDecoder(r.Body).Decode(&body)
 		if err != nil {
-			fmt.Println("Invalid request body provided to pattern update: ", err)
+			http.Error(w, "Failed to decode request body", http.StatusBadRequest)
 			return
 		}
 
-		for _, parameter := range body.Parameters {
-			for key, value := range parameter {
-				fmt.Printf("%s: %v\n", key, value)
+		requestParameters, ok := body["parameters"].([]interface{})
+		if !ok || len(requestParameters) == 0 {
+			fmt.Println("Invalid or empty parameters provided")
+		}
+
+		for key, parameter := range *pattern.ListParameters() {
+			for k, param := range requestParameters {
+				fmt.Println("k ", k, " param: ", param)
+				newParam := param.(map[string]interface{})
+				parm, ok := newParam[key]
+				if !ok {
+					continue
+				}
+				err = nil
+				switch key {
+				case "color":
+					colorParam, ok := parm.(map[string]interface{})
+					if !ok {
+						fmt.Println("Color parameter is not a map")
+						continue
+					}
+
+					// Extract individual color components
+					r, ok := colorParam["r"].(float64)
+					if !ok {
+						fmt.Println("Value of 'r' is not a float64")
+						continue
+					}
+					g, ok := colorParam["g"].(float64)
+					if !ok {
+						fmt.Println("Value of 'g' is not a float64")
+						continue
+					}
+					b, ok := colorParam["b"].(float64)
+					if !ok {
+						fmt.Println("Value of 'b' is not a float64")
+						continue
+					}
+
+					color := Color{
+						R: colorPigment(r),
+						G: colorPigment(g),
+						B: colorPigment(b),
+					}
+
+					err = parameter.Update(color)
+				case "speed":
+					speed, ok := parm.(float64)
+					if !ok {
+						fmt.Println("Speed parameter is not a float")
+						continue
+					}
+					err = parameter.Update(speed)
+				case "size":
+					size, ok := parm.(float64)
+					if !ok {
+						fmt.Println("Size parameter is not a float")
+						continue
+					}
+					err = parameter.Update(size)
+				case "reversed":
+					fmt.Println("parm: ", parm)
+					reversed, ok := parm.(bool)
+					if !ok {
+						fmt.Println("Reversed parameter is not a boolean")
+						continue
+					}
+					err = parameter.Update(reversed)
+				}
+				if err != nil {
+					msg := fmt.Sprintf(
+						"Error updating parameter %v on pattern %v: %v",
+						key,
+						patternName,
+						err,
+					)
+					fmt.Println(msg)
+				}
 			}
 		}
 
@@ -167,5 +282,6 @@ func main() {
 	})
 
 	fmt.Println("starting webserver")
+	// TODO: this seems to error out when not connected a network. need to find some way to handle that
 	log.Fatal(http.ListenAndServe(":8008", mux))
 }

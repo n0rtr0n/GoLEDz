@@ -15,33 +15,46 @@ const MAX_X_POSITION = 600
 
 // TODO: return and handle any errors encountered in updating patterns
 type Pattern interface {
+	ListParameters() *AdjustableParameters
 	Update()
 }
 
 type SolidColorPattern struct {
-	pixelMap *PixelMap
-	color    Color
+	pixelMap   *PixelMap
+	parameters AdjustableParameters
+}
+
+func (p *SolidColorPattern) ListParameters() *AdjustableParameters {
+	return &p.parameters
 }
 
 func (p *SolidColorPattern) Update() {
+	// While I'm not a fan of this explicit cast here, I'm not sure of any other elegant method
+	color := p.parameters["color"].Get().(Color)
 	for i := range *p.pixelMap.pixels {
-		(*p.pixelMap.pixels)[i].color = p.color
+		(*p.pixelMap.pixels)[i].color = color
 	}
 }
 
 type SolidColorFadePattern struct {
 	pixelMap   *PixelMap
+	parameters AdjustableParameters
 	currentHue float64
-	speed      float64
+}
+
+func (p *SolidColorFadePattern) ListParameters() *AdjustableParameters {
+	return &p.parameters
 }
 
 func (p *SolidColorFadePattern) Update() {
+	speed := p.parameters["speed"].Get().(float64)
+
 	c := colorful.Hsv(p.currentHue, 1.0, 1.0)
-	color := Color{r: colorPigment(c.R * 255), g: colorPigment(c.G * 255), b: colorPigment(c.B * 255)}
+	color := Color{R: colorPigment(c.R * 255), G: colorPigment(c.G * 255), B: colorPigment(c.B * 255)}
 	for i := range *p.pixelMap.pixels {
 		(*p.pixelMap.pixels)[i].color = color
 	}
-	p.currentHue = math.Mod(p.currentHue+p.speed, MAX_HUE_VALUE)
+	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)
 }
 
 type ChaserPattern struct {
@@ -70,71 +83,83 @@ func (p *ChaserPattern) Update() {
 type RainbowPattern struct {
 	pixelMap   *PixelMap
 	currentHue float64
-	speed      float64
+	parameters AdjustableParameters
+}
+
+func (p *RainbowPattern) ListParameters() *AdjustableParameters {
+	return &p.parameters
 }
 
 func (p *RainbowPattern) Update() {
+	speed := p.parameters["speed"].Get().(float64)
 	for i, pixel := range *p.pixelMap.pixels {
 		hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
-		color := Color{r: colorPigment(c.R * 255), g: colorPigment(c.G * 255), b: colorPigment(c.B * 255)}
-
+		color := Color{R: colorPigment(c.R * 255), G: colorPigment(c.G * 255), B: colorPigment(c.B * 255)}
 		(*p.pixelMap.pixels)[i].color = color
 	}
-	p.currentHue = math.Mod(p.currentHue+p.speed, MAX_HUE_VALUE)
+	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)
 }
 
 type RainbowDiagonalPattern struct {
 	pixelMap   *PixelMap
 	currentHue float64
-	speed      float64
-	reversed   bool
-	size       float64
+	parameters AdjustableParameters
 }
 
-// TODO: add size, and orientation
-// TODO: slight hiccup at the end of this pattern's iteration
+func (p *RainbowDiagonalPattern) ListParameters() *AdjustableParameters {
+	return &p.parameters
+}
+
+// TODO: add orientation
 func (p *RainbowDiagonalPattern) Update() {
+	speed := p.parameters["speed"].Get().(float64)
+	size := p.parameters["size"].Get().(float64)
+	reversed := p.parameters["reversed"].Get().(bool)
+
 	for i, pixel := range *p.pixelMap.pixels {
-
-		position := float64(pixel.x+pixel.y) * p.size
-
+		position := float64(pixel.x+pixel.y) * size
 		hueVal := math.Mod(p.currentHue+position, MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
-		color := Color{r: colorPigment(c.R * 255), g: colorPigment(c.G * 255), b: colorPigment(c.B * 255)}
-
+		color := Color{R: colorPigment(c.R * 255), G: colorPigment(c.G * 255), B: colorPigment(c.B * 255)}
 		(*p.pixelMap.pixels)[i].color = color
 	}
 
 	var hue float64
-	if p.reversed {
+	if reversed {
 		// ensures that this value will not dip below 0
-		hue = MAX_HUE_VALUE + p.currentHue - p.speed
+		hue = MAX_HUE_VALUE + p.currentHue - speed
 	} else {
-		hue = p.currentHue + p.speed
+		hue = p.currentHue + speed
 	}
+
 	p.currentHue = math.Mod(hue, MAX_HUE_VALUE)
 }
 
 type VerticalStripesPattern struct {
 	pixelMap        *PixelMap
-	color           Color
-	speed           float64
-	size            float64
+	parameters      AdjustableParameters
 	currentPosition float64
 }
 
-func (p *VerticalStripesPattern) Update() {
+func (p *VerticalStripesPattern) ListParameters() *AdjustableParameters {
+	return &p.parameters
+}
 
-	min := int16(p.currentPosition - p.size)
-	max := int16(p.currentPosition + p.size)
+func (p *VerticalStripesPattern) Update() {
+	speed := p.parameters["speed"].Get().(float64)
+	size := p.parameters["size"].Get().(float64)
+	color := p.parameters["color"].Get().(Color)
+
+	min := int16(p.currentPosition - size)
+	max := int16(p.currentPosition + size)
 	for i, pixel := range *p.pixelMap.pixels {
 		if pixel.x > min && pixel.x < max {
-			(*p.pixelMap.pixels)[i].color = p.color
+			(*p.pixelMap.pixels)[i].color = color
 		} else {
 			(*p.pixelMap.pixels)[i].color = Color{}
 		}
 	}
 
-	p.currentPosition = math.Mod(p.currentPosition+p.speed, MAX_X_POSITION)
+	p.currentPosition = math.Mod(p.currentPosition+speed, MAX_X_POSITION)
 }

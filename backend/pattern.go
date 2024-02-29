@@ -17,6 +17,7 @@ const MAX_X_POSITION = 600
 type Pattern interface {
 	ListParameters() *AdjustableParameters
 	Update()
+	GetName() string
 }
 
 type SolidColorPattern struct {
@@ -34,6 +35,10 @@ func (p *SolidColorPattern) Update() {
 	for i := range *p.pixelMap.pixels {
 		(*p.pixelMap.pixels)[i].color = color
 	}
+}
+
+func (p *SolidColorPattern) GetName() string {
+	return "solidColor"
 }
 
 type SolidColorFadePattern struct {
@@ -55,6 +60,10 @@ func (p *SolidColorFadePattern) Update() {
 		(*p.pixelMap.pixels)[i].color = color
 	}
 	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)
+}
+
+func (p *SolidColorFadePattern) GetName() string {
+	return "solidColorFade"
 }
 
 type ChaserPattern struct {
@@ -80,6 +89,10 @@ func (p *ChaserPattern) Update() {
 	p.currentPosition = math.Mod(p.currentPosition, MAX_PIXEL_LENGTH)
 }
 
+func (p *ChaserPattern) GetName() string {
+	return "chaser"
+}
+
 type RainbowPattern struct {
 	pixelMap   *PixelMap
 	currentHue float64
@@ -99,6 +112,10 @@ func (p *RainbowPattern) Update() {
 		(*p.pixelMap.pixels)[i].color = color
 	}
 	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)
+}
+
+func (p *RainbowPattern) GetName() string {
+	return "rainbow"
 }
 
 type RainbowDiagonalPattern struct {
@@ -136,6 +153,10 @@ func (p *RainbowDiagonalPattern) Update() {
 	p.currentHue = math.Mod(hue, MAX_HUE_VALUE)
 }
 
+func (p *RainbowDiagonalPattern) GetName() string {
+	return "rainbowDiagonal"
+}
+
 type VerticalStripesPattern struct {
 	pixelMap        *PixelMap
 	parameters      AdjustableParameters
@@ -162,4 +183,8 @@ func (p *VerticalStripesPattern) Update() {
 	}
 
 	p.currentPosition = math.Mod(p.currentPosition+speed, MAX_X_POSITION)
+}
+
+func (p *VerticalStripesPattern) GetName() string {
+	return "verticalStripes"
 }

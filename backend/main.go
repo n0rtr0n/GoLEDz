@@ -84,7 +84,16 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /patterns", func(w http.ResponseWriter, r *http.Request) {
-		jsonData, err := json.Marshal(patterns)
+
+		type AllPatternsRequest struct {
+			Patterns Patterns `json:"patterns"`
+		}
+
+		patternsReq := AllPatternsRequest{
+			Patterns: patterns,
+		}
+
+		jsonData, err := json.Marshal(patternsReq)
 		if err != nil {
 			fmt.Printf("could not marshal json: %s\n", err)
 			return

@@ -39,8 +39,12 @@ func (p *ChaserPattern) Update() {
 	spacing := p.Parameters.Spacing.Value
 	color := p.Parameters.Color.Value
 
+	width := uint16(size + spacing)
+
 	for i, pixel := range *p.pixelMap.pixels {
-		if (pixel.channelPosition+uint16(p.currentPosition))%uint16(size+spacing) < uint16(size) {
+
+		chaserPos := pixel.channelPosition + uint16(p.currentPosition)
+		if width > 0 && (chaserPos%width < uint16(size)) {
 			(*p.pixelMap.pixels)[i].color = color
 		} else {
 			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}

@@ -38,9 +38,7 @@ func (p *VerticalStripesPattern) Update() {
 
 	min := int16(p.currentPosition - size)
 	max := int16(p.currentPosition + size)
-	// fmt.Println(min, max)
 	for i, pixel := range *p.pixelMap.pixels {
-		// f mt.Println(pixel.x, pixel.y)
 		if pixel.x > min && pixel.x < max {
 			(*p.pixelMap.pixels)[i].color = color
 		} else {

@@ -48,17 +48,17 @@ func (p *ColorParameter) Get() interface{} {
 func (p *ColorParameter) Update(value interface{}) error {
 	newValue, ok := value.(Color)
 	if !ok {
-		return errors.New("Invalid type for ColorParameter")
+		return errors.New("invalid type for ColorParameter")
 	}
 
 	if newValue.R < MIN_PIGMENT_VALUE || newValue.R > MAX_PIGMENT_VALUE {
-		return errors.New("Red color pigment provided to ColorParameter is invalid.")
+		return errors.New("red color pigment provided to ColorParameter is invalid")
 	}
 	if newValue.G < MIN_PIGMENT_VALUE || newValue.G > MAX_PIGMENT_VALUE {
-		return errors.New("Green color pigment provided to ColorParameter is invalid.")
+		return errors.New("green color pigment provided to ColorParameter is invalid")
 	}
 	if newValue.B < MIN_PIGMENT_VALUE || newValue.B > MAX_PIGMENT_VALUE {
-		return errors.New("Blue color pigment provided to ColorParameter is invalid.")
+		return errors.New("blue color pigment provided to ColorParameter is invalid")
 	}
 	p.Value = newValue
 	return nil
@@ -68,7 +68,6 @@ type FloatParameter struct {
 	Min   float64 `json:"min"`
 	Max   float64 `json:"max"`
 	Value float64 `json:"value"`
-	Type  string  `json:"type"`
 }
 
 func (p *FloatParameter) Get() interface{} {
@@ -78,12 +77,41 @@ func (p *FloatParameter) Get() interface{} {
 func (p *FloatParameter) Update(value interface{}) error {
 	newValue, ok := value.(float64)
 	if !ok {
-		return errors.New("Invalid type for FloatParameter")
+		return errors.New("invalid type for FloatParameter")
 	}
 
 	if newValue < p.Min || newValue > p.Max {
 		err := fmt.Sprintf(
 			"Value %f provided to FloatParameter outside of range %f to %f",
+			newValue,
+			p.Min,
+			p.Max,
+		)
+		return errors.New(err)
+	}
+	p.Value = newValue
+	return nil
+}
+
+type IntParameter struct {
+	Min   int `json:"min"`
+	Max   int `json:"max"`
+	Value int `json:"value"`
+}
+
+func (p *IntParameter) Get() interface{} {
+	return p.Value
+}
+
+func (p *IntParameter) Update(value interface{}) error {
+	newValue, ok := value.(int)
+	if !ok {
+		return errors.New("invalid type for IntParameter")
+	}
+
+	if newValue < p.Min || newValue > p.Max {
+		err := fmt.Sprintf(
+			"Value %d provided to FloatParameter outside of range %d to %d",
 			newValue,
 			p.Min,
 			p.Max,
@@ -101,7 +129,7 @@ type BooleanParameter struct {
 func (p *BooleanParameter) Update(value interface{}) error {
 	newValue, ok := value.(bool)
 	if !ok {
-		return errors.New("Value provided to BooleanParameter is not boolean")
+		return errors.New("value provided to BooleanParameter is not boolean")
 	}
 	p.Value = newValue
 	return nil

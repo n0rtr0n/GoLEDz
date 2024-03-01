@@ -20,104 +20,7 @@ func main() {
 		pixels: buildPixelGrid(),
 	}
 
-	// register patterns
-	patterns := make(map[string]Pattern)
-
-	rainbowDiagonalPattern := RainbowDiagonalPattern{
-		pixelMap: &pixelMap,
-		Parameters: RainbowDiagonalParameters{
-			Speed: FloatParameter{
-				Min:   0.1,
-				Max:   360.0,
-				Value: 6.0,
-			},
-			Size: FloatParameter{
-				Min:   0.1,
-				Max:   360.0,
-				Value: 0.5,
-			},
-			Reversed: BooleanParameter{
-				Value: true,
-			},
-		},
-		currentHue: 0.0,
-	}
-
-	patterns[rainbowDiagonalPattern.GetName()] = &rainbowDiagonalPattern
-
-	// solidColorPattern := SolidColorPattern{
-	// 	pixelMap:   &pixelMap,
-	// 	parameters: AdjustableParameters{},
-	// }
-
-	// solidColorPattern.parameters["color"] = &ColorParameter{
-	// 	value: Color{R: 0, G: 0, B: 255},
-	// }
-
-	// rainbowPattern := RainbowPattern{
-	// 	pixelMap:   &pixelMap,
-	// 	parameters: AdjustableParameters{},
-	// 	currentHue: 1.0,
-	// }
-	// rainbowPattern.parameters["speed"] = &FloatParameter{
-	// 	value: 1.0,
-	// 	min:   0.1,
-	// 	max:   360.0,
-	// }
-
-	// rainbowDiagonalPattern := RainbowDiagonalPattern{
-	// 	pixelMap:   &pixelMap,
-	// 	parameters: AdjustableParameters{},
-	// 	currentHue: 0.0,
-	// }
-	// rainbowDiagonalPattern.parameters["speed"] = &FloatParameter{
-	// 	value: 6.0,
-	// 	min:   0.1,
-	// 	max:   360.0,
-	// }
-	// rainbowDiagonalPattern.parameters["size"] = &FloatParameter{
-	// 	value: 0.5,
-	// 	min:   0.1,
-	// 	max:   180.0,
-	// }
-	// rainbowDiagonalPattern.parameters["reversed"] = &BooleanParameter{
-	// 	value: true,
-	// }
-
-	// solidColorFadePattern := SolidColorFadePattern{
-	// 	pixelMap:   &pixelMap,
-	// 	parameters: AdjustableParameters{},
-	// 	currentHue: 0.0,
-	// }
-	// solidColorFadePattern.parameters["speed"] = &FloatParameter{
-	// 	value: 5.0,
-	// 	min:   0.1,
-	// 	max:   360.0,
-	// }
-	// verticalStripesPattern := VerticalStripesPattern{
-	// 	pixelMap:        &pixelMap,
-	// 	parameters:      AdjustableParameters{},
-	// 	currentPosition: 0.0,
-	// }
-	// verticalStripesPattern.parameters["color"] = &ColorParameter{
-	// 	value: Color{R: 0, G: 0, B: 255},
-	// }
-	// verticalStripesPattern.parameters["size"] = &FloatParameter{
-	// 	value: 25.0,
-	// 	min:   0.1,
-	// 	max:   360.0,
-	// }
-	// verticalStripesPattern.parameters["speed"] = &FloatParameter{
-	// 	value: 15.0,
-	// 	min:   0.1,
-	// 	max:   360.0,
-	// }
-
-	// patterns["solidColor"] = &solidColorPattern
-	// patterns["rainbow"] = &rainbowPattern
-	// patterns["rainbowDiagonal"] = &rainbowDiagonalPattern
-	// patterns["solidColorFade"] = &solidColorFadePattern
-	// patterns["verticalStripes"] = &verticalStripesPattern
+	patterns := registerPatterns(&pixelMap)
 
 	currentPattern := patterns["rainbowDiagonal"]
 
@@ -214,8 +117,6 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
-
-		fmt.Println("after: ", pattern)
 
 		fmt.Println("new pattern", patternName)
 		currentPattern = pattern

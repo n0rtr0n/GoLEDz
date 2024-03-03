@@ -8,13 +8,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: RainbowDiagonalParameters{
 			Speed: FloatParameter{
 				Min:   0.1,
-				Max:   360.0,
+				Max:   100.0,
 				Value: 6.0,
 				Type:  "float",
 			},
 			Size: FloatParameter{
 				Min:   0.1,
-				Max:   360.0,
+				Max:   100.0,
 				Value: 0.5,
 				Type:  "float",
 			},
@@ -81,7 +81,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 			Size: FloatParameter{
 				Min:   1.0,
-				Max:   360.0,
+				Max:   100.0,
 				Value: 20.0,
 				Type:  "float",
 			},
@@ -101,19 +101,19 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: ChaserParameters{
 			Speed: FloatParameter{
 				Min:   0.1,
-				Max:   360.0,
+				Max:   50.0,
 				Value: 1.0,
 				Type:  "float",
 			},
 			Size: IntParameter{
-				Min:   0,
-				Max:   500,
+				Min:   1,
+				Max:   100,
 				Value: 5,
 				Type:  "int",
 			},
 			Spacing: IntParameter{
-				Min:   0,
-				Max:   500,
+				Min:   1,
+				Max:   100,
 				Value: 5,
 				Type:  "int",
 			},

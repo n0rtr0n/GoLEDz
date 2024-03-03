@@ -107,6 +107,7 @@ func main() {
 	// this endpoint will allow us to update the current pattern and/or pattern params
 	// TODO: add http.Error handling vs printlines
 	mux.HandleFunc("PUT /patterns/{pattern}", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("handling pattern update request")
 		patternName := r.PathValue("pattern")
 		pattern, ok := patterns[patternName]
 		if !ok {
@@ -118,6 +119,7 @@ func main() {
 
 		err := json.NewDecoder(r.Body).Decode(&parameters)
 		if err != nil {
+			fmt.Println(err)
 			http.Error(w, "Failed to decode request body", http.StatusBadRequest)
 			return
 		}

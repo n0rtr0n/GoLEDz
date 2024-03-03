@@ -10,14 +10,17 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Min:   0.1,
 				Max:   360.0,
 				Value: 6.0,
+				Type:  "float",
 			},
 			Size: FloatParameter{
 				Min:   0.1,
 				Max:   360.0,
 				Value: 0.5,
+				Type:  "float",
 			},
 			Reversed: BooleanParameter{
 				Value: true,
+				Type:  "bool",
 			},
 		},
 		currentHue: 0.0,
@@ -32,6 +35,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 					G: 0,
 					B: 0,
 				},
+				Type: "color",
 			},
 		},
 	}
@@ -42,16 +46,26 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Min:   0.1,
 				Max:   50.0,
 				Value: 1.0,
+				Type:  "float",
 			},
 		},
 	}
 	solidColorFadePattern := SolidColorFadePattern{
 		pixelMap: pixelMap,
 		Parameters: SolidColorFadeParameters{
+			Color: ColorParameter{
+				Value: Color{
+					R: 255,
+					G: 0,
+					B: 0,
+				},
+				Type: "color",
+			},
 			Speed: FloatParameter{
 				Min:   0.1,
 				Max:   50.0,
 				Value: 1.0,
+				Type:  "float",
 			},
 		},
 	}
@@ -63,11 +77,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Min:   0.1,
 				Max:   100.0,
 				Value: 3.0,
+				Type:  "float",
 			},
 			Size: FloatParameter{
 				Min:   1.0,
 				Max:   360.0,
 				Value: 20.0,
+				Type:  "float",
 			},
 			Color: ColorParameter{
 				Value: Color{
@@ -75,6 +91,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 					G: 0,
 					B: 0,
 				},
+				Type: "color",
 			},
 		},
 	}
@@ -86,16 +103,19 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Min:   0.1,
 				Max:   360.0,
 				Value: 1.0,
+				Type:  "float",
 			},
 			Size: IntParameter{
 				Min:   0,
 				Max:   500,
 				Value: 5,
+				Type:  "int",
 			},
 			Spacing: IntParameter{
 				Min:   0,
 				Max:   500,
 				Value: 5,
+				Type:  "int",
 			},
 			Color: ColorParameter{
 				Value: Color{
@@ -103,6 +123,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 					G: 0,
 					B: 0,
 				},
+				Type: "color",
 			},
 		},
 	}

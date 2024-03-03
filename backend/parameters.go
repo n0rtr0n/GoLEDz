@@ -38,7 +38,8 @@ func (c *Color) toString() []byte {
 }
 
 type ColorParameter struct {
-	Value Color
+	Value Color  `json:"color"`
+	Type  string `json:"type,omitempty"`
 }
 
 func (p *ColorParameter) Get() interface{} {
@@ -65,9 +66,10 @@ func (p *ColorParameter) Update(value interface{}) error {
 }
 
 type FloatParameter struct {
-	Min   float64 `json:"min"`
-	Max   float64 `json:"max"`
+	Min   float64 `json:"min,omitempty"`
+	Max   float64 `json:"max,omitempty"`
 	Value float64 `json:"value"`
+	Type  string  `json:"type,omitempty"`
 }
 
 func (p *FloatParameter) Get() interface{} {
@@ -94,9 +96,10 @@ func (p *FloatParameter) Update(value interface{}) error {
 }
 
 type IntParameter struct {
-	Min   int `json:"min"`
-	Max   int `json:"max"`
-	Value int `json:"value"`
+	Min   int    `json:"min,omitempty"`
+	Max   int    `json:"max,omitempty"`
+	Value int    `json:"value"`
+	Type  string `json:"type,omitempty"`
 }
 
 func (p *IntParameter) Get() interface{} {
@@ -123,7 +126,8 @@ func (p *IntParameter) Update(value interface{}) error {
 }
 
 type BooleanParameter struct {
-	Value bool `json:"value"`
+	Value bool   `json:"value"`
+	Type  string `json:"type,omitempty"`
 }
 
 func (p *BooleanParameter) Update(value interface{}) error {

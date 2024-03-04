@@ -38,7 +38,7 @@ func (c *Color) toString() []byte {
 }
 
 type ColorParameter struct {
-	Value Color  `json:"color"`
+	Value Color  `json:"value"`
 	Type  string `json:"type,omitempty"`
 }
 

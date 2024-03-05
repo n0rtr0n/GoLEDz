@@ -23,14 +23,16 @@ func (p *ChaserPattern) UpdateParameters(parameters AdjustableParameters) error 
 	p.Parameters.Size.Update(newParams.Size.Value)
 	p.Parameters.Spacing.Update(newParams.Spacing.Value)
 	p.Parameters.Color.Update(newParams.Color.Value)
+	p.Parameters.Reversed.Update(newParams.Reversed.Value)
 	return nil
 }
 
 type ChaserParameters struct {
-	Speed   FloatParameter `json:"speed"`
-	Size    IntParameter   `json:"size"`
-	Spacing IntParameter   `json:"spacing"`
-	Color   ColorParameter `json:"color"`
+	Speed    FloatParameter   `json:"speed"`
+	Size     IntParameter     `json:"size"`
+	Spacing  IntParameter     `json:"spacing"`
+	Color    ColorParameter   `json:"color"`
+	Reversed BooleanParameter `json:"reversed"`
 }
 
 func (p *ChaserPattern) Update() {
@@ -38,6 +40,7 @@ func (p *ChaserPattern) Update() {
 	size := p.Parameters.Size.Value
 	spacing := p.Parameters.Spacing.Value
 	color := p.Parameters.Color.Value
+	reversed := p.Parameters.Reversed.Value
 
 	width := uint16(size + spacing)
 
@@ -50,7 +53,12 @@ func (p *ChaserPattern) Update() {
 			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
 		}
 	}
-	p.currentPosition += speed
+	if reversed {
+		// ensures that this value will not dip below 0
+		p.currentPosition = MAX_PIXEL_LENGTH + p.currentPosition - speed
+	} else {
+		p.currentPosition = p.currentPosition + speed
+	}
 	p.currentPosition = math.Mod(p.currentPosition, MAX_PIXEL_LENGTH)
 }
 

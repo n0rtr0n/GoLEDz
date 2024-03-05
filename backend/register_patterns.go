@@ -125,6 +125,10 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				},
 				Type: "color",
 			},
+			Reversed: BooleanParameter{
+				Value: false,
+				Type:  "bool",
+			},
 		},
 	}
 

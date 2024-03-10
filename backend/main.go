@@ -10,14 +10,19 @@ import (
 
 type Patterns map[string]Pattern
 
+var config *Config
+
 func main() {
+
+	config = loadConfig()
+
 	// websocket connections. will no longer block if we're not connected to a websocket
 	var subscribers []chan *PixelMap
 	ch := make(chan *PixelMap)
 	defer close(ch)
 
 	pixelMap := PixelMap{
-		pixels: buildPixelGrid(),
+		pixels: build2ChannelsOfPixels(),
 	}
 
 	patterns := registerPatterns(&pixelMap)
@@ -139,5 +144,6 @@ func main() {
 
 	fmt.Println("starting webserver")
 	// TODO: this seems to error out when not connected a network. need to find some way to handle that
-	log.Fatal(http.ListenAndServe(":8008", mux))
+	address := fmt.Sprintf("%v:%v", config.HostAddress, config.HostPort)
+	log.Fatal(http.ListenAndServe(address, mux))
 }

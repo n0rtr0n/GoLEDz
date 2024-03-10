@@ -20,7 +20,7 @@ func setupSACN() map[uint16]chan<- []byte {
 		if err != nil {
 			log.Fatal(err)
 		}
-		trans.SetDestinations(universeNumber, []string{"192.168.1.105"})
+		trans.SetDestinations(universeNumber, []string{config.ControllerAddress})
 	}
 
 	return universes

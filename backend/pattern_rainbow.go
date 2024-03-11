@@ -12,6 +12,7 @@ type RainbowPattern struct {
 	pixelMap   *PixelMap
 	currentHue float64
 	Parameters RainbowParameters `json:"parameters"`
+	Label      string            `json:"label,omitempty"`
 }
 
 func (p *RainbowPattern) UpdateParameters(parameters AdjustableParameters) error {

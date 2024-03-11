@@ -10,6 +10,7 @@ type VerticalStripesPattern struct {
 	pixelMap        *PixelMap
 	currentPosition float64
 	Parameters      VerticalStripesParameters `json:"parameters"`
+	Label           string                    `json:"label,omitempty"`
 }
 
 func (p *VerticalStripesPattern) UpdateParameters(parameters AdjustableParameters) error {

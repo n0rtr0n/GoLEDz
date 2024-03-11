@@ -8,6 +8,7 @@ import (
 type SolidColorPattern struct {
 	pixelMap   *PixelMap
 	Parameters SolidColorParameters `json:"parameters"`
+	Label      string               `json:"label,omitempty"`
 }
 
 func (p *SolidColorPattern) UpdateParameters(parameters AdjustableParameters) error {

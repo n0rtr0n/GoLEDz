@@ -10,6 +10,7 @@ type ChaserPattern struct {
 	pixelMap        *PixelMap
 	currentPosition float64
 	Parameters      ChaserParameters `json:"parameters"`
+	Label           string           `json:"label,omitempty"`
 }
 
 func (p *ChaserPattern) UpdateParameters(parameters AdjustableParameters) error {

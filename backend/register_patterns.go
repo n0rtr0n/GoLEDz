@@ -24,6 +24,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 		},
 		currentHue: 0.0,
+		Label:      "Rainbow Diagonal",
 	}
 
 	solidColorPattern := SolidColorPattern{
@@ -38,6 +39,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type: "color",
 			},
 		},
+		Label: "Solid Color",
 	}
 	rainbowPattern := RainbowPattern{
 		pixelMap: pixelMap,
@@ -49,6 +51,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type:  "float",
 			},
 		},
+		Label: "Rainbow",
 	}
 	solidColorFadePattern := SolidColorFadePattern{
 		pixelMap: pixelMap,
@@ -68,6 +71,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type:  "float",
 			},
 		},
+		Label: "Solid Color Fade",
 	}
 
 	verticalStripesPattern := VerticalStripesPattern{
@@ -94,6 +98,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type: "color",
 			},
 		},
+		Label: "Vertical Stripes",
 	}
 
 	chaserPattern := ChaserPattern{
@@ -130,6 +135,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type:  "bool",
 			},
 		},
+		Label: "Chaser",
 	}
 
 	patterns[rainbowDiagonalPattern.GetName()] = &rainbowDiagonalPattern

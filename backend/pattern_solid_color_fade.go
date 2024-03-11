@@ -10,8 +10,9 @@ import (
 
 type SolidColorFadePattern struct {
 	pixelMap   *PixelMap
-	Parameters SolidColorFadeParameters `json:"parameters"`
 	currentHue float64
+	Parameters SolidColorFadeParameters `json:"parameters"`
+	Label      string                   `json:"label,omitempty"`
 }
 
 func (p *SolidColorFadePattern) UpdateParameters(parameters AdjustableParameters) error {

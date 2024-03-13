@@ -53,11 +53,15 @@ func main() {
 		the new map. for now, this will be a crude and brute force implementation where we send
 		every pixel for every frame
 	*/
-	go func() {
-		for {
-			// TODO: we'll eventually handle frame rate. For now, we'll update up to 20 times/second
-			time.Sleep(50 * time.Millisecond)
 
+	updateInterval := time.Second / time.Duration(config.TargetFramesPerSecond)
+	updateTicker := time.Tick(updateInterval)
+
+	updateWithTimeout := func(timeout time.Duration) {
+
+		done := make(chan bool)
+
+		go func() {
 			// update pixel map
 			currentPattern.Update()
 
@@ -76,6 +80,22 @@ func main() {
 			for _, subscriber := range subscribers {
 				subscriber <- &pixelMap
 			}
+			done <- true
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(timeout):
+			fmt.Println("error: time limit exceeded for frame update")
+		}
+	}
+
+	go func() {
+		for range updateTicker {
+			// Start a goroutine to execute the update function with a timeout
+			go func() {
+				updateWithTimeout(updateInterval)
+			}()
 		}
 	}()
 

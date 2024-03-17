@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -109,22 +108,7 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /patterns", func(w http.ResponseWriter, r *http.Request) {
-
-		type AllPatternsRequest struct {
-			Patterns Patterns `json:"patterns"`
-		}
-
-		patternsReq := AllPatternsRequest{
-			Patterns: patterns,
-		}
-
-		jsonData, err := json.Marshal(patternsReq)
-		if err != nil {
-			fmt.Printf("could not marshal json: %s\n", err)
-			return
-		}
-
-		fmt.Fprint(w, string(jsonData))
+		getPatternsHandler(w, r, &patterns)
 	})
 
 	// this is pretty nice feature of go 1.22;
@@ -132,35 +116,10 @@ func main() {
 	// this endpoint will allow us to update the current pattern and/or pattern params
 	// TODO: add http.Error handling vs printlines
 	mux.HandleFunc("PUT /patterns/{pattern}", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("handling pattern update request")
-		patternName := r.PathValue("pattern")
-		pattern, ok := patterns[patternName]
-		if !ok {
-			fmt.Println("error fetching pattern")
-			return
-		}
-
-		parameters := pattern.GetPatternUpdateRequest()
-
-		err := json.NewDecoder(r.Body).Decode(&parameters)
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "Failed to decode request body", http.StatusBadRequest)
-			return
-		}
-
-		err = pattern.UpdateParameters(parameters.GetParameters())
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		fmt.Println("new pattern", patternName)
-		currentPattern = pattern
+		updatePatternHandler(w, r, patterns, &currentPattern)
 	})
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "GoLEDz web server")
-	})
+	mux.HandleFunc("GET /", rootHandler)
 
 	fmt.Println("starting webserver")
 	// TODO: this seems to error out when not connected a network. need to find some way to handle that

@@ -11,7 +11,8 @@ type Pixel struct {
 }
 
 type PixelMap struct {
-	pixels *[]Pixel
+	pixels     *[]Pixel
+	brightness uint8
 }
 
 func (p *PixelMap) toJSON() ([]byte, error) {

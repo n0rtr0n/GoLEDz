@@ -36,7 +36,12 @@ func (p *RainbowPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 		hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
-		color := Color{R: colorPigment(c.R * 255), G: colorPigment(c.G * 255), B: colorPigment(c.B * 255)}
+		color := Color{
+			R:          colorPigment(c.R * 255),
+			G:          colorPigment(c.G * 255),
+			B:          colorPigment(c.B * 255),
+			Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+		}
 		(*p.pixelMap.pixels)[i].color = color
 	}
 	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)

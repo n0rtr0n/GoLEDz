@@ -36,7 +36,12 @@ func (p *SolidColorFadePattern) Update() {
 	speed := p.Parameters.Speed.Value
 
 	c := colorful.Hsv(p.currentHue, 1.0, 1.0)
-	color := Color{R: colorPigment(c.R * 255), G: colorPigment(c.G * 255), B: colorPigment(c.B * 255)}
+	color := Color{
+		R:          colorPigment(c.R * 255),
+		G:          colorPigment(c.G * 255),
+		B:          colorPigment(c.B * 255),
+		Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+	}
 	for i := range *p.pixelMap.pixels {
 		(*p.pixelMap.pixels)[i].color = color
 	}

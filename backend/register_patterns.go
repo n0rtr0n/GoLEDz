@@ -32,9 +32,10 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: SolidColorParameters{
 			Color: ColorParameter{
 				Value: Color{
-					R: 255,
-					G: 0,
-					B: 0,
+					R:          255,
+					G:          0,
+					B:          0,
+					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
 				},
 				Type: "color",
 			},
@@ -58,9 +59,10 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: SolidColorFadeParameters{
 			Color: ColorParameter{
 				Value: Color{
-					R: 255,
-					G: 0,
-					B: 0,
+					R:          255,
+					G:          0,
+					B:          0,
+					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
 				},
 				Type: "color",
 			},
@@ -91,9 +93,10 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 			Color: ColorParameter{
 				Value: Color{
-					R: 255,
-					G: 0,
-					B: 0,
+					R:          255,
+					G:          0,
+					B:          0,
+					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
 				},
 				Type: "color",
 			},
@@ -124,9 +127,10 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 			Color: ColorParameter{
 				Value: Color{
-					R: 255,
-					G: 0,
-					B: 0,
+					R:          255,
+					G:          0,
+					B:          0,
+					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
 				},
 				Type: "color",
 			},

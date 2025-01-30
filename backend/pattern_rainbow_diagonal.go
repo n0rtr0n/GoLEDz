@@ -43,7 +43,12 @@ func (p *RainbowDiagonalPattern) Update() {
 		position := float64(pixel.x+pixel.y) * size
 		hueVal := math.Mod(p.currentHue+position, MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
-		color := Color{R: colorPigment(c.R * 255), G: colorPigment(c.G * 255), B: colorPigment(c.B * 255)}
+		color := Color{
+			R:          colorPigment(c.R * 255),
+			G:          colorPigment(c.G * 255),
+			B:          colorPigment(c.B * 255),
+			Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+		}
 		(*p.pixelMap.pixels)[i].color = color
 	}
 

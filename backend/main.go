@@ -21,6 +21,8 @@ func main() {
 	defer close(ch)
 
 	pixelMap := PixelMap{
+		// pixels: buildPixelGrid(),
+		// pixels: buildLegSegment(1, 1, 100, 200, 90),
 		pixels: build2ChannelsOfPixels(),
 	}
 
@@ -67,7 +69,9 @@ func main() {
 			for i, universe := range universes {
 				bytes := make([]byte, 512)
 				for _, pixel := range pixelsByUniverse[i] {
+					// fmt.Println(pixel)
 					pos := pixel.channelPosition - 1
+					// fmt.Println(pos)
 					startIndex := pos * 3
 					endIndex := startIndex + 3
 					copy(bytes[startIndex:endIndex], pixel.color.toString())

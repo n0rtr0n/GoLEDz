@@ -8,7 +8,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: RainbowDiagonalParameters{
 			Speed: FloatParameter{
 				Min:   0.1,
-				Max:   100.0,
+				Max:   25.0,
 				Value: 6.0,
 				Type:  "float",
 			},
@@ -32,15 +32,34 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: SolidColorParameters{
 			Color: ColorParameter{
 				Value: Color{
-					R:          255,
-					G:          0,
-					B:          0,
-					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+					R: 255,
+					G: 0,
+					B: 0,
 				},
 				Type: "color",
 			},
 		},
 		Label: "Solid Color",
+	}
+	pulsePattern := PulsePattern{
+		pixelMap: pixelMap,
+		Parameters: PulseParameters{
+			Color: ColorParameter{
+				Value: Color{
+					R: 255,
+					G: 0,
+					B: 0,
+				},
+				Type: "color",
+			},
+			Speed: FloatParameter{
+				Min:   0.1,
+				Max:   20.0,
+				Value: 1.0,
+				Type:  "float",
+			},
+		},
+		Label: "Pulse",
 	}
 	rainbowPattern := RainbowPattern{
 		pixelMap: pixelMap,
@@ -51,6 +70,12 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Value: 1.0,
 				Type:  "float",
 			},
+			Brightness: FloatParameter{
+				Min:   1,
+				Max:   100,
+				Value: 100,
+				Type:  "float",
+			},
 		},
 		Label: "Rainbow",
 	}
@@ -59,10 +84,9 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: SolidColorFadeParameters{
 			Color: ColorParameter{
 				Value: Color{
-					R:          255,
-					G:          0,
-					B:          0,
-					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+					R: 255,
+					G: 0,
+					B: 0,
 				},
 				Type: "color",
 			},
@@ -93,10 +117,9 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 			Color: ColorParameter{
 				Value: Color{
-					R:          255,
-					G:          0,
-					B:          0,
-					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+					R: 255,
+					G: 0,
+					B: 0,
 				},
 				Type: "color",
 			},
@@ -127,10 +150,9 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 			Color: ColorParameter{
 				Value: Color{
-					R:          255,
-					G:          0,
-					B:          0,
-					Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+					R: 255,
+					G: 0,
+					B: 0,
 				},
 				Type: "color",
 			},
@@ -148,6 +170,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 	patterns[solidColorFadePattern.GetName()] = &solidColorFadePattern
 	patterns[verticalStripesPattern.GetName()] = &verticalStripesPattern
 	patterns[chaserPattern.GetName()] = &chaserPattern
+	patterns[pulsePattern.GetName()] = &pulsePattern
 
 	return patterns
 }

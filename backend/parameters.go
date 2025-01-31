@@ -7,12 +7,11 @@ import (
 )
 
 type colorPigment uint8
-type brightness uint8
 
 const MIN_PIGMENT_VALUE colorPigment = 0
 const MAX_PIGMENT_VALUE colorPigment = 255
 
-const MAX_BRIGHTNESS_VALUE = 50
+const MAX_BRIGHTNESS_VALUE float64 = 50.0
 
 // internal parameters are set at the time the pattern is registered
 // each adjustable parameter implements the update method, which
@@ -28,22 +27,29 @@ type ParametersUpdateRequest struct {
 }
 
 type Color struct {
-	R          colorPigment `json:"r"`
-	G          colorPigment `json:"g"`
-	B          colorPigment `json:"b"`
-	Brightness brightness   `json:"brightness"`
+	R colorPigment `json:"r"`
+	G colorPigment `json:"g"`
+	B colorPigment `json:"b"`
 }
 
 func (c *Color) toString() []byte {
 	return []byte{
-		adjustedColor(c.R, c.Brightness),
-		adjustedColor(c.G, c.Brightness),
-		adjustedColor(c.B, c.Brightness),
+		byte(c.R),
+		byte(c.G),
+		byte(c.B),
 	}
 }
 
-func adjustedColor(color colorPigment, brightness brightness) byte {
-	return byte(math.Round(float64(color) * float64(brightness) / 100))
+func brightnessAdjustedColorPigment(color colorPigment, brightness float64) colorPigment {
+	return colorPigment(math.Round(float64(color) * float64(brightness) / 100))
+}
+
+func brightnessAdjustedColor(color Color, brightness float64) Color {
+	return Color{
+		brightnessAdjustedColorPigment(color.R, brightness),
+		brightnessAdjustedColorPigment(color.G, brightness),
+		brightnessAdjustedColorPigment(color.B, brightness),
+	}
 }
 
 type ColorParameter struct {

@@ -2,10 +2,24 @@ package main
 
 import "encoding/json"
 
+type ColorOrder uint8
+
+// pixels from different manufacturers often come with surprises
+// surprise! the color ordering is sometimes different, and we have to account for that in code
+const (
+	RGB ColorOrder = iota
+	RBG
+	BRG
+	BGR
+	GRB
+	GBR
+)
+
 type Pixel struct {
 	x               int16
 	y               int16
 	color           Color
+	colorOrder      ColorOrder
 	universe        uint16
 	channelPosition uint16
 }

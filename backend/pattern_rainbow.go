@@ -23,25 +23,28 @@ func (p *RainbowPattern) UpdateParameters(parameters AdjustableParameters) error
 	}
 
 	p.Parameters.Speed.Update(newParams.Speed.Value)
+	p.Parameters.Brightness.Update((newParams.Brightness.Value))
 	return nil
 }
 
 type RainbowParameters struct {
-	Speed FloatParameter `json:"speed"`
+	Speed      FloatParameter `json:"speed"`
+	Brightness FloatParameter `json:"brightness"`
 }
 
 func (p *RainbowPattern) Update() {
 	speed := p.Parameters.Speed.Value
+	brightness := p.Parameters.Brightness.Value
 
 	for i, pixel := range *p.pixelMap.pixels {
 		hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
 		color := Color{
-			R:          colorPigment(c.R * 255),
-			G:          colorPigment(c.G * 255),
-			B:          colorPigment(c.B * 255),
-			Brightness: brightness(MAX_BRIGHTNESS_VALUE),
+			R: colorPigment(c.R * 255),
+			G: colorPigment(c.G * 255),
+			B: colorPigment(c.B * 255),
 		}
+		color = brightnessAdjustedColor(color, brightness)
 		(*p.pixelMap.pixels)[i].color = color
 	}
 	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)

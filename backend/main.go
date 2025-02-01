@@ -20,10 +20,40 @@ func main() {
 	ch := make(chan *PixelMap)
 	defer close(ch)
 
+	// left front leg
+	pixels := buildLegSegment(1, 1, 350, 500, 180)
+	*pixels = append(*pixels, *buildLegSegment(1, 2, 250, 500, 180)...)
+	*pixels = append(*pixels, *buildLegSegment(1, 3, 150, 500, 180)...)
+
+	// right front leg
+	*pixels = append(*pixels, *buildLegSegment(1, 4, 450, 490, 0)...)
+	*pixels = append(*pixels, *buildLegSegment(1, 5, 550, 490, 0)...)
+	*pixels = append(*pixels, *buildLegSegment(1, 6, 650, 490, 0)...)
+
+	// left rear leg
+	*pixels = append(*pixels, *buildLegSegment(1, 7, 350, 190, 135)...)
+	*pixels = append(*pixels, *buildLegSegment(1, 8, 270, 110, 135)...)
+
+	// right rear leg
+	*pixels = append(*pixels, *buildLegSegment(1, 9, 450, 190, 45)...)
+	*pixels = append(*pixels, *buildLegSegment(1, 10, 530, 110, 45)...)
+
+	// body
+	*pixels = append(*pixels, *buildLegSegment(1, 11, 400, 500, 90)...)
+	*pixels = append(*pixels, *buildLegSegment(1, 12, 400, 400, 90)...)
+	*pixels = append(*pixels, *buildLegSegment(1, 13, 400, 300, 90)...)
+
+	// head
+	*pixels = append(*pixels, *buildLegSegment(1, 14, 410, 550, 270)...)
+
+	// tusks
+	*pixels = append(*pixels, *buildTuskSegment(1, 15, 350, 550, 225)...)
+	*pixels = append(*pixels, *buildTuskSegment(1, 16, 460, 545, 315)...)
+
 	pixelMap := PixelMap{
 		// pixels: buildPixelGrid(),
-		// pixels: buildLegSegment(1, 1, 100, 200, 90),
-		pixels: build2ChannelsOfPixels(),
+		pixels: pixels,
+		//pixels: build2ChannelsOfPixels(),
 	}
 
 	patterns := registerPatterns(&pixelMap)

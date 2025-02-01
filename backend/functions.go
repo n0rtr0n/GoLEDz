@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -43,49 +42,80 @@ func build2ChannelsOfPixels() *[]Pixel {
 	return &pixels
 }
 
-func buildLegSegment(startingChannelNumber uint16, universe uint16, xStart int16, yStart int16, rotationDegrees int16) *[]Pixel {
+func buildLegSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16) *[]Pixel {
 
 	pixels := []Pixel{}
 	xPos := xStart
 	yPos := yStart
 	channelPosition := startingChannelNumber
-	bigPixelsSpacing := int16(40)
-	smallPixelsSpacing := int16(12)
-	bigPixelsAlongEachSide := int16(4)
+	bigPixelsSpacing := int16(10)
+	smallPixelsSpacing := int16(8)
+	bigPixelsAlongEachSide := int16(10)
 	smallPixelsAlongEachSide := int16(12)
 
 	for i := int16(0); i < bigPixelsAlongEachSide; i++ {
-		xPos = xStart + i*bigPixelsSpacing
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		if i < bigPixelsAlongEachSide-1 {
+			xTranslated, yTranslated := rotate(bigPixelsSpacing, 0, rotationDegrees)
+			xPos += xTranslated
+			yPos += yTranslated
+		}
+		channelPosition += 1
+	}
 
-		xTranslated, yTranslated := translate(xPos, yPos, rotationDegrees)
-		pixels = append(pixels, Pixel{x: xTranslated, y: yTranslated, universe: universe, channelPosition: channelPosition})
-		channelPosition += 1
-	}
-	yPos += bigPixelsSpacing
+	// shift these over slightly
+	xTranslated, yTranslated := rotate(0, bigPixelsSpacing/2, rotationDegrees)
+	xPos += xTranslated
+	yPos += yTranslated
+
 	for i := int16(0); i < bigPixelsAlongEachSide; i++ {
-		xPos = xStart + (bigPixelsAlongEachSide-i-1)*bigPixelsSpacing
-		xTranslated, yTranslated := translate(xPos, yPos, rotationDegrees)
-		pixels = append(pixels, Pixel{x: xTranslated, y: yTranslated, universe: universe, channelPosition: channelPosition})
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		if i < bigPixelsAlongEachSide-1 {
+			xTranslated, yTranslated := rotate(-bigPixelsSpacing, 0, rotationDegrees)
+			xPos += xTranslated
+			yPos += yTranslated
+		}
 		channelPosition += 1
 	}
-	yPos += bigPixelsSpacing
+
+	// start the snake over but with y += big pixel spacing
+	xTranslated, yTranslated = rotate(0, bigPixelsSpacing, rotationDegrees)
+	xPos = xStart + xTranslated
+	yPos = yStart + yTranslated
 
 	for i := int16(0); i < smallPixelsAlongEachSide; i++ {
-		xPos = xStart + i*smallPixelsSpacing
-		xTranslated, yTranslated := translate(xPos, yPos, rotationDegrees)
-		pixels = append(pixels, Pixel{x: xTranslated, y: yTranslated, universe: universe, channelPosition: channelPosition})
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		xTranslated, yTranslated := rotate(smallPixelsSpacing, 0, rotationDegrees)
+		xPos += xTranslated
+		yPos += yTranslated
 		channelPosition += 1
 	}
-	fmt.Println(pixels)
 
 	return &pixels
 }
 
-func translate(x int16, y int16, rotationDegrees int16) (newX int16, newY int16) {
-	newX = int16(float64(-y)*math.Sin(float64(rotationDegrees))) + int16(float64(x)*math.Cos(float64(rotationDegrees)))
-	newY = int16(float64(-x)*math.Sin(float64(rotationDegrees))) + int16(float64(y)*math.Cos(float64(rotationDegrees)))
-	fmt.Println(x, y)
-	fmt.Println("changes to")
-	fmt.Println(newX, newY)
+func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16) *[]Pixel {
+	pixels := []Pixel{}
+	xPos := xStart
+	yPos := yStart
+	channelPosition := startingChannelNumber
+	pixelsSpacing := int16(5)
+	totalPixels := int16(60)
+
+	for i := int16(0); i < totalPixels; i++ {
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		xTranslated, yTranslated := rotate(pixelsSpacing, 0, rotationDegrees)
+		xPos += xTranslated
+		yPos += yTranslated
+		channelPosition += 1
+	}
+	return &pixels
+}
+
+func rotate(x int16, y int16, rotationDegrees int16) (int16, int16) {
+	radians := degreesToRadians(float64(rotationDegrees))
+	newX := int16(float64(x)*math.Cos(float64(radians))) + int16(float64(y)*math.Sin(float64(radians)))
+	newY := int16(float64(y)*math.Cos(float64(radians))) + int16(float64(-x)*math.Sin(float64(radians)))
+
 	return newX, newY
 }

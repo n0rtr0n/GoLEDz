@@ -11,7 +11,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPatternsHandler(w http.ResponseWriter, r *http.Request, patterns *map[string]Pattern) {
-
 	type AllPatternsRequest struct {
 		Patterns Patterns `json:"patterns"`
 	}

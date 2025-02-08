@@ -1,6 +1,9 @@
 package main
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"math"
+)
 
 type ColorOrder uint8
 
@@ -15,6 +18,9 @@ const (
 	GBR
 )
 
+const CENTER_X = 400
+const CENTER_Y = 400
+
 type Pixel struct {
 	x               int16
 	y               int16
@@ -27,6 +33,29 @@ type Pixel struct {
 type PixelMap struct {
 	pixels     *[]Pixel
 	brightness uint8
+}
+
+type Point struct {
+	X, Y int16
+}
+
+func calculateAngle(target Point, center Point) float64 {
+	// difference from center point
+	dx := target.X - center.X
+	dy := center.Y - target.Y
+
+	// calculate angle in radians using atan2
+	angleRadians := math.Atan2(float64(dy), float64(dx))
+
+	// convert to degrees
+	angleDegrees := angleRadians * 180 / math.Pi
+
+	// normalize to 0-360 range
+	if angleDegrees < 0 {
+		angleDegrees += 360
+	}
+
+	return angleDegrees
 }
 
 func (p *PixelMap) toJSON() ([]byte, error) {

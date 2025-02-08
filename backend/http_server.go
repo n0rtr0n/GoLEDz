@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -144,18 +145,22 @@ func (s *LEDServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
-	s.mu.RLock()
-	patterns := make([]string, 0, len(s.patterns))
-	for name := range s.patterns {
-		patterns = append(patterns, name)
-	}
-	s.mu.RUnlock()
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(patterns); err != nil {
-		http.Error(w, "Failed to encode patterns", http.StatusInternalServerError)
+	type AllPatternsRequest struct {
+		Patterns Patterns `json:"patterns"`
+	}
+
+	patternsReq := AllPatternsRequest{
+		Patterns: s.patterns,
+	}
+
+	jsonData, err := json.Marshal(patternsReq)
+	if err != nil {
+		fmt.Printf("could not marshal json: %s\n", err)
 		return
 	}
+
+	fmt.Fprint(w, string(jsonData))
 }
 
 func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {

@@ -8,15 +8,15 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-type RainbowCirclePattern struct {
+type RainbowPinwheelPattern struct {
 	pixelMap   *PixelMap
 	currentHue float64
-	Parameters RainbowCircleParameters `json:"parameters"`
-	Label      string                  `json:"label,omitempty"`
+	Parameters RainbowPinwheelParameters `json:"parameters"`
+	Label      string                    `json:"label,omitempty"`
 }
 
-func (p *RainbowCirclePattern) UpdateParameters(parameters AdjustableParameters) error {
-	newParams, ok := parameters.(RainbowCircleParameters)
+func (p *RainbowPinwheelPattern) UpdateParameters(parameters AdjustableParameters) error {
+	newParams, ok := parameters.(RainbowPinwheelParameters)
 	if !ok {
 		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
 		return errors.New(err)
@@ -28,21 +28,22 @@ func (p *RainbowCirclePattern) UpdateParameters(parameters AdjustableParameters)
 	return nil
 }
 
-type RainbowCircleParameters struct {
+type RainbowPinwheelParameters struct {
 	Speed    FloatParameter   `json:"speed"`
 	Size     FloatParameter   `json:"size"`
 	Reversed BooleanParameter `json:"reversed"`
 }
 
-func (p *RainbowCirclePattern) Update() {
+func (p *RainbowPinwheelPattern) Update() {
 	speed := p.Parameters.Speed.Value
 	// size := p.Parameters.Size.Value
 	reversed := p.Parameters.Reversed.Value
 
 	for i, pixel := range *p.pixelMap.pixels {
-		distance := math.Sqrt(math.Pow(float64(CENTER_X-pixel.x), 2) + math.Pow(float64(CENTER_Y-pixel.y), 2))
 
-		hueVal := math.Mod(p.currentHue+distance, MAX_HUE_VALUE)
+		rotationDegrees := calculateAngle(Point{pixel.x, pixel.y}, Point{CENTER_X, CENTER_Y})
+
+		hueVal := math.Mod(p.currentHue+rotationDegrees, MAX_HUE_VALUE)
 		c := colorful.Hsv(hueVal, 1.0, 1.0)
 		color := Color{
 			R: colorPigment(c.R * 255),
@@ -63,20 +64,20 @@ func (p *RainbowCirclePattern) Update() {
 	p.currentHue = math.Mod(hue, MAX_HUE_VALUE)
 }
 
-func (p *RainbowCirclePattern) GetName() string {
-	return "rainbowCircle"
+func (p *RainbowPinwheelPattern) GetName() string {
+	return "rainbowPinwheel"
 }
 
-type RainbowCircleUpdateRequest struct {
-	Parameters RainbowCircleParameters `json:"parameters"`
+type RainbowPinwheelUpdateRequest struct {
+	Parameters RainbowPinwheelParameters `json:"parameters"`
 }
 
-func (r *RainbowCircleUpdateRequest) GetParameters() AdjustableParameters {
+func (r *RainbowPinwheelUpdateRequest) GetParameters() AdjustableParameters {
 	return r.Parameters
 }
 
-func (p *RainbowCirclePattern) GetPatternUpdateRequest() PatternUpdateRequest {
-	return &RainbowCircleUpdateRequest{
-		Parameters: RainbowCircleParameters{},
+func (p *RainbowPinwheelPattern) GetPatternUpdateRequest() PatternUpdateRequest {
+	return &RainbowPinwheelUpdateRequest{
+		Parameters: RainbowPinwheelParameters{},
 	}
 }

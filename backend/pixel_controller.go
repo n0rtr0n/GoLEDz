@@ -162,6 +162,8 @@ func (pc *PixelController) Stop() {
 }
 
 func (pc *PixelController) UpdatePattern(pattern Pattern) {
+	fmt.Println("Switching to pattern: ")
+	fmt.Println(pattern.GetName())
 	pc.patternMu.Lock()
 	pc.currentPattern = pattern
 	pc.patternMu.Unlock()

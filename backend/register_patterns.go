@@ -26,7 +26,29 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		currentHue: 0.0,
 		Label:      "Rainbow Diagonal",
 	}
-
+	rainbowCirclePattern := RainbowCirclePattern{
+		pixelMap: pixelMap,
+		Parameters: RainbowCircleParameters{
+			Speed: FloatParameter{
+				Min:   0.1,
+				Max:   25.0,
+				Value: 6.0,
+				Type:  "float",
+			},
+			Size: FloatParameter{
+				Min:   0.1,
+				Max:   100.0,
+				Value: 0.5,
+				Type:  "float",
+			},
+			Reversed: BooleanParameter{
+				Value: true,
+				Type:  "bool",
+			},
+		},
+		currentHue: 0.0,
+		Label:      "Rainbow Circle",
+	}
 	solidColorPattern := SolidColorPattern{
 		pixelMap: pixelMap,
 		Parameters: SolidColorParameters{
@@ -164,6 +186,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Label: "Chaser",
 	}
 
+	patterns[rainbowCirclePattern.GetName()] = &rainbowCirclePattern
 	patterns[rainbowDiagonalPattern.GetName()] = &rainbowDiagonalPattern
 	patterns[rainbowPattern.GetName()] = &rainbowPattern
 	patterns[solidColorPattern.GetName()] = &solidColorPattern

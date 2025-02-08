@@ -75,7 +75,7 @@ func main() {
 		log.Fatal("no patterns registered")
 	}
 
-	initialPattern := patterns["rainbowDiagonal"]
+	initialPattern := patterns["rainbowCircle"]
 
 	controller := NewPixelController(
 		universes,

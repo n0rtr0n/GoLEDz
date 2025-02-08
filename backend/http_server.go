@@ -27,7 +27,7 @@ func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[
 		subscribers: make([]chan *PixelMap, 0),
 	}
 
-	if pattern, ok := patterns["rainbowDiagonal"]; ok {
+	if pattern, ok := patterns["rainbowCircle"]; ok {
 		server.currentPattern = pattern
 	} else {
 		// get first available pattern

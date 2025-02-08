@@ -13,7 +13,6 @@ type SACNHandler struct {
 
 func NewSACNHandler() (*SACNHandler, error) {
 	errorTracker := NewErrorTracker(5*time.Minute, 50)
-	fmt.Println("new SACN handler")
 
 	config := TransmitterConfig{
 		CID:        [16]byte{0x47, 0x6f, 0x4c, 0x45, 0x44, 0x7a}, // "GoLEDz"

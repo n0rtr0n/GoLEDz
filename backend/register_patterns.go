@@ -72,6 +72,29 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		currentHue: 0.0,
 		Label:      "Rainbow Pinwheel",
 	}
+	gradientPinwheelPattern := GradientPinwheelPattern{
+		pixelMap: pixelMap,
+		Parameters: GradientPinwheelParameters{
+			Speed: FloatParameter{
+				Min:   0.001,
+				Max:   0.1,
+				Value: 0.01,
+				Type:  "float",
+			},
+			Size: FloatParameter{
+				Min:   0.1,
+				Max:   100.0,
+				Value: 0.5,
+				Type:  "float",
+			},
+			Reversed: BooleanParameter{
+				Value: true,
+				Type:  "bool",
+			},
+		},
+		currentSaturation: 0.0,
+		Label:             "Gradient Pinwheel",
+	}
 	solidColorPattern := SolidColorPattern{
 		pixelMap: pixelMap,
 		Parameters: SolidColorParameters{
@@ -211,6 +234,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 
 	patterns[rainbowCirclePattern.GetName()] = &rainbowCirclePattern
 	patterns[rainbowPinwheelPattern.GetName()] = &rainbowPinwheelPattern
+	patterns[gradientPinwheelPattern.GetName()] = &gradientPinwheelPattern
 	patterns[rainbowDiagonalPattern.GetName()] = &rainbowDiagonalPattern
 	patterns[rainbowPattern.GetName()] = &rainbowPattern
 	patterns[solidColorPattern.GetName()] = &solidColorPattern

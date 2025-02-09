@@ -81,11 +81,11 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Value: 0.01,
 				Type:  "float",
 			},
-			Size: FloatParameter{
-				Min:   0.1,
-				Max:   100.0,
-				Value: 0.5,
-				Type:  "float",
+			Divisions: IntParameter{
+				Min:   1,
+				Max:   30,
+				Value: 1,
+				Type:  "int",
 			},
 			Reversed: BooleanParameter{
 				Value: true,
@@ -225,6 +225,10 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type: "color",
 			},
 			Reversed: BooleanParameter{
+				Value: false,
+				Type:  "bool",
+			},
+			Rainbow: BooleanParameter{
 				Value: false,
 				Type:  "bool",
 			},

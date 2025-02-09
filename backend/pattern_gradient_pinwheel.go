@@ -21,21 +21,23 @@ func (p *GradientPinwheelPattern) UpdateParameters(parameters AdjustableParamete
 		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
 		return errors.New(err)
 	}
+	fmt.Println(newParams)
 
 	p.Parameters.Speed.Update(newParams.Speed.Value)
-	p.Parameters.Size.Update(newParams.Size.Value)
+	p.Parameters.Divisions.Update(newParams.Divisions.Value)
 	p.Parameters.Reversed.Update(newParams.Reversed.Value)
 	return nil
 }
 
 type GradientPinwheelParameters struct {
-	Speed    FloatParameter   `json:"speed"`
-	Size     FloatParameter   `json:"size"`
-	Reversed BooleanParameter `json:"reversed"`
+	Speed     FloatParameter   `json:"speed"`
+	Divisions IntParameter     `json:"divisions"`
+	Reversed  BooleanParameter `json:"reversed"`
 }
 
 func (p *GradientPinwheelPattern) Update() {
 	speed := p.Parameters.Speed.Value
+	divisions := p.Parameters.Divisions.Value
 	reversed := p.Parameters.Reversed.Value
 
 	// fixed Hue Val for now
@@ -47,7 +49,7 @@ func (p *GradientPinwheelPattern) Update() {
 		rotationDegrees := calculateAngle(Point{pixel.x, pixel.y}, Point{CENTER_X, CENTER_Y})
 
 		// we want to express this as a fraction of MAX_DEGREES, so this will be 0.0 - 1.0
-		fractionDegrees := rotationDegrees / MAX_DEGREES
+		fractionDegrees := rotationDegrees / MAX_DEGREES * float64(divisions)
 
 		// anything over 1.0 will loop back around to 0.0
 		saturation := math.Mod(p.currentSaturation+fractionDegrees, MAX_SATURATION)

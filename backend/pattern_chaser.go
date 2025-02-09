@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"math"
+
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 type ChaserPattern struct {
 	pixelMap        *PixelMap
 	currentPosition float64
+	currentHue      float64
 	Parameters      ChaserParameters `json:"parameters"`
 	Label           string           `json:"label,omitempty"`
 }
@@ -25,6 +28,7 @@ func (p *ChaserPattern) UpdateParameters(parameters AdjustableParameters) error 
 	p.Parameters.Spacing.Update(newParams.Spacing.Value)
 	p.Parameters.Color.Update(newParams.Color.Value)
 	p.Parameters.Reversed.Update(newParams.Reversed.Value)
+	p.Parameters.Rainbow.Update(newParams.Reversed.Value)
 	return nil
 }
 
@@ -34,6 +38,7 @@ type ChaserParameters struct {
 	Spacing  IntParameter     `json:"spacing"`
 	Color    ColorParameter   `json:"color"`
 	Reversed BooleanParameter `json:"reversed"`
+	Rainbow  BooleanParameter `json:"rainbow"`
 }
 
 func (p *ChaserPattern) Update() {
@@ -42,10 +47,20 @@ func (p *ChaserPattern) Update() {
 	spacing := p.Parameters.Spacing.Value
 	color := p.Parameters.Color.Value
 	reversed := p.Parameters.Reversed.Value
+	rainbow := p.Parameters.Rainbow.Value
 
 	width := uint16(size + spacing)
 
 	for i, pixel := range *p.pixelMap.pixels {
+		if rainbow {
+			hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), MAX_HUE_VALUE)
+			c := colorful.Hsv(hueVal, 1.0, 1.0)
+			color = Color{
+				R: colorPigment(c.R * 255),
+				G: colorPigment(c.G * 255),
+				B: colorPigment(c.B * 255),
+			}
+		}
 
 		chaserPos := pixel.channelPosition + uint16(p.currentPosition)
 		if width > 0 && (chaserPos%width < uint16(size)) {
@@ -54,6 +69,9 @@ func (p *ChaserPattern) Update() {
 			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
 		}
 	}
+
+	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)
+
 	if reversed {
 		// ensures that this value will not dip below 0
 		p.currentPosition = MAX_PIXEL_LENGTH + p.currentPosition - speed

@@ -167,6 +167,8 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 	patternName := r.PathValue("pattern")
 
 	s.mu.Lock()
+
+	fmt.Println("handling pattern update request")
 	pattern, exists := s.patterns[patternName]
 	if !exists {
 		s.mu.Unlock()
@@ -175,10 +177,24 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 	}
 
 	s.currentPattern = pattern
-	s.mu.Unlock()
+
+	parameters := pattern.GetPatternUpdateRequest()
+
+	err := json.NewDecoder(r.Body).Decode(&parameters)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		return
+	}
+
+	err = pattern.UpdateParameters(parameters.GetParameters())
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// update the pixel map with the new pattern
 	s.controller.UpdatePattern(pattern)
+	s.mu.Unlock()
 
 	w.WriteHeader(http.StatusOK)
 }

@@ -21,7 +21,8 @@ func (p *SpiralPattern) UpdateParameters(parameters AdjustableParameters) error 
 	}
 
 	p.Parameters.Speed.Update(newParams.Speed.Value)
-	p.Parameters.Color.Update(newParams.Color.Value)
+	p.Parameters.Color1.Update(newParams.Color1.Value)
+	p.Parameters.Color2.Update(newParams.Color2.Value)
 	p.Parameters.MaxTurns.Update(newParams.MaxTurns.Value)
 	p.Parameters.Width.Update(newParams.Width.Value)
 	return nil
@@ -29,13 +30,15 @@ func (p *SpiralPattern) UpdateParameters(parameters AdjustableParameters) error 
 
 type SpiralParameters struct {
 	Speed    FloatParameter `json:"speed"`
-	Color    ColorParameter `json:"color"`
+	Color1   ColorParameter `json:"color1"`
+	Color2   ColorParameter `json:"color2"`
 	MaxTurns IntParameter   `json:"maxTurns"`
 	Width    FloatParameter `json:"width"`
 }
 
 func (p *SpiralPattern) Update() {
-	color := p.Parameters.Color.Value
+	color1 := p.Parameters.Color1.Value
+	color2 := p.Parameters.Color2.Value
 	speed := p.Parameters.Speed.Value
 	width := p.Parameters.Width.Value
 
@@ -58,9 +61,9 @@ func (p *SpiralPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 		point := Point{pixel.x, pixel.y}
 		if isPointBetweenSpirals(point, params) {
-			(*p.pixelMap.pixels)[i].color = color
+			(*p.pixelMap.pixels)[i].color = color1
 		} else {
-			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
+			(*p.pixelMap.pixels)[i].color = color2
 		}
 	}
 	p.currentRotation += speed

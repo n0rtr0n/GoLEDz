@@ -160,11 +160,19 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 	spiralPattern := SpiralPattern{
 		pixelMap: pixelMap,
 		Parameters: SpiralParameters{
-			Color: ColorParameter{
+			Color1: ColorParameter{
 				Value: Color{
 					R: 255,
 					G: 0,
 					B: 0,
+				},
+				Type: "color",
+			},
+			Color2: ColorParameter{
+				Value: Color{
+					R: 0,
+					G: 0,
+					B: 255,
 				},
 				Type: "color",
 			},

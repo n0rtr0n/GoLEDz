@@ -7,13 +7,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		pixelMap: pixelMap,
 		Parameters: RainbowDiagonalParameters{
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   25.0,
 				Value: 6.0,
 				Type:  "float",
 			},
 			Size: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   100.0,
 				Value: 0.5,
 				Type:  "float",
@@ -30,13 +30,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		pixelMap: pixelMap,
 		Parameters: RainbowCircleParameters{
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   25.0,
 				Value: 6.0,
 				Type:  "float",
 			},
 			Size: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   100.0,
 				Value: 0.5,
 				Type:  "float",
@@ -53,13 +53,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		pixelMap: pixelMap,
 		Parameters: RainbowPinwheelParameters{
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   25.0,
 				Value: 6.0,
 				Type:  "float",
 			},
 			Size: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   100.0,
 				Value: 0.5,
 				Type:  "float",
@@ -76,13 +76,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		pixelMap: pixelMap,
 		Parameters: GradientPinwheelParameters{
 			Speed: FloatParameter{
-				Min:   0.001,
+				Min:   floatPointer(0.001),
 				Max:   0.1,
 				Value: 0.02,
 				Type:  "float",
 			},
 			Divisions: IntParameter{
-				Min:   1,
+				Min:   intPointer(1),
 				Max:   20,
 				Value: 4,
 				Type:  "int",
@@ -94,6 +94,34 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		},
 		currentSaturation: 0.0,
 		Label:             "Gradient Pinwheel",
+	}
+	gradientPattern := GradientPattern{
+		pixelMap: pixelMap,
+		Parameters: GradientParameters{
+			Color1: ColorParameter{
+				Value: Color{
+					R: 255,
+					G: 0,
+					B: 0,
+				},
+				Type: "color",
+			},
+			Color2: ColorParameter{
+				Value: Color{
+					R: 0,
+					G: 0,
+					B: 255,
+				},
+				Type: "color",
+			},
+			Rotation: FloatParameter{
+				Min:   floatPointer(0.0),
+				Max:   360.0,
+				Value: 0.0,
+				Type:  "float",
+			},
+		},
+		Label: "Gradient",
 	}
 	solidColorPattern := SolidColorPattern{
 		pixelMap: pixelMap,
@@ -121,7 +149,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type: "color",
 			},
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   20.0,
 				Value: 1.0,
 				Type:  "float",
@@ -141,19 +169,19 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type: "color",
 			},
 			Speed: FloatParameter{
-				Min:   1.0,
+				Min:   floatPointer(1.0),
 				Max:   20.0,
 				Value: 8.0,
 				Type:  "float",
 			},
 			MaxTurns: IntParameter{
-				Min:   1,
+				Min:   intPointer(1),
 				Max:   20,
 				Value: 3,
 				Type:  "int",
 			},
 			Width: FloatParameter{
-				Min:   10.0,
+				Min:   floatPointer(10.0),
 				Max:   100.0,
 				Value: 40.0,
 				Type:  "float",
@@ -165,13 +193,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		pixelMap: pixelMap,
 		Parameters: RainbowParameters{
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   50.0,
 				Value: 1.0,
 				Type:  "float",
 			},
 			Brightness: FloatParameter{
-				Min:   1,
+				Min:   floatPointer(1),
 				Max:   100,
 				Value: 100,
 				Type:  "float",
@@ -191,7 +219,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type: "color",
 			},
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   50.0,
 				Value: 1.0,
 				Type:  "float",
@@ -203,13 +231,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		pixelMap: pixelMap,
 		Parameters: VerticalStripesParameters{
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   100.0,
 				Value: 10.0,
 				Type:  "float",
 			},
 			Size: FloatParameter{
-				Min:   1.0,
+				Min:   floatPointer(1.0),
 				Max:   100.0,
 				Value: 30.0,
 				Type:  "float",
@@ -230,19 +258,19 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		pixelMap: pixelMap,
 		Parameters: ChaserParameters{
 			Speed: FloatParameter{
-				Min:   0.1,
+				Min:   floatPointer(0.1),
 				Max:   50.0,
 				Value: 1.0,
 				Type:  "float",
 			},
 			Size: IntParameter{
-				Min:   1,
+				Min:   intPointer(1),
 				Max:   100,
 				Value: 5,
 				Type:  "int",
 			},
 			Spacing: IntParameter{
-				Min:   1,
+				Min:   intPointer(1),
 				Max:   100,
 				Value: 5,
 				Type:  "int",
@@ -270,6 +298,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 	patterns[rainbowCirclePattern.GetName()] = &rainbowCirclePattern
 	patterns[rainbowPinwheelPattern.GetName()] = &rainbowPinwheelPattern
 	patterns[gradientPinwheelPattern.GetName()] = &gradientPinwheelPattern
+	patterns[gradientPattern.GetName()] = &gradientPattern
 	patterns[rainbowDiagonalPattern.GetName()] = &rainbowDiagonalPattern
 	patterns[rainbowPattern.GetName()] = &rainbowPattern
 	patterns[solidColorPattern.GetName()] = &solidColorPattern

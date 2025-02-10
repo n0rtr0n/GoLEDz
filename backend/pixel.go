@@ -18,8 +18,14 @@ const (
 	GBR
 )
 
-const CENTER_X = 400
-const CENTER_Y = 400
+// viewing area is approx 800x800.
+const MIN_X = 0
+const MAX_X = 800
+const MIN_Y = 0
+const MAX_Y = 800
+
+const CENTER_X = (MIN_X + MAX_X) / 2
+const CENTER_Y = (MIN_Y + MAX_Y) / 2
 
 type Section struct {
 	name  string

@@ -86,10 +86,10 @@ func (p *ColorParameter) Update(value interface{}) error {
 }
 
 type FloatParameter struct {
-	Min   float64 `json:"min,omitempty"`
-	Max   float64 `json:"max,omitempty"`
-	Value float64 `json:"value"`
-	Type  string  `json:"type,omitempty"`
+	Min   *float64 `json:"min,omitempty"`
+	Max   float64  `json:"max,omitempty"`
+	Value float64  `json:"value"`
+	Type  string   `json:"type,omitempty"`
 }
 
 func (p *FloatParameter) Get() interface{} {
@@ -102,11 +102,11 @@ func (p *FloatParameter) Update(value interface{}) error {
 		return errors.New("invalid type for FloatParameter")
 	}
 
-	if newValue < p.Min || newValue > p.Max {
+	if newValue < *p.Min || newValue > p.Max {
 		err := fmt.Sprintf(
 			"Value %f provided to FloatParameter outside of range %f to %f",
 			newValue,
-			p.Min,
+			*p.Min,
 			p.Max,
 		)
 		return errors.New(err)
@@ -116,7 +116,7 @@ func (p *FloatParameter) Update(value interface{}) error {
 }
 
 type IntParameter struct {
-	Min   int    `json:"min,omitempty"`
+	Min   *int   `json:"min,omitempty"`
 	Max   int    `json:"max,omitempty"`
 	Value int    `json:"value"`
 	Type  string `json:"type,omitempty"`
@@ -132,11 +132,11 @@ func (p *IntParameter) Update(value interface{}) error {
 		return errors.New("invalid type for IntParameter")
 	}
 
-	if newValue < p.Min || newValue > p.Max {
+	if newValue < *p.Min || newValue > p.Max {
 		err := fmt.Sprintf(
 			"Value %d provided to FloatParameter outside of range %d to %d",
 			newValue,
-			p.Min,
+			*p.Min,
 			p.Max,
 		)
 		return errors.New(err)

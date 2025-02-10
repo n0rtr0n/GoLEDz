@@ -123,3 +123,16 @@ func rotate(x int16, y int16, rotationDegrees int16) (int16, int16) {
 func degreesToRadians(degrees float64) float64 {
 	return degrees * math.Pi / 180
 }
+
+// helper function to return address of float value
+// this is needed in order to allow values of 0.0, while specifying "omitempty"
+// in JSON marshalling
+func floatPointer(value float64) *float64 {
+	return &value
+}
+
+// same as above for int pointer. effectively allows us to set
+// a minimum value of 0 for params
+func intPointer(value int) *int {
+	return &value
+}

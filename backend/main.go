@@ -21,35 +21,61 @@ func main() {
 	ch := make(chan *PixelMap)
 	defer close(ch)
 
+	sections := map[string]Section{
+		"all":   {name: "all", label: "All"},
+		"limbs": {name: "limbs", label: "Limbs"},
+		"torso": {name: "torso", label: "Torso"},
+		"head":  {name: "head", label: "head"},
+		"tusks": {name: "tusks", label: "tusks"},
+	}
+
+	limb_sections := []Section{
+		sections["all"],
+		sections["limbs"],
+	}
+
 	// left front leg
-	pixels := buildLegSegment(1, 1, 350, 500, 180)
-	*pixels = append(*pixels, *buildLegSegment(2, 1, 250, 500, 180)...)
-	*pixels = append(*pixels, *buildLegSegment(3, 1, 150, 500, 180)...)
+	pixels := buildMammothSegment(1, 1, 350, 500, 180, limb_sections)
+	*pixels = append(*pixels, *buildMammothSegment(2, 1, 250, 500, 180, limb_sections)...)
+	*pixels = append(*pixels, *buildMammothSegment(3, 1, 150, 500, 180, limb_sections)...)
 
 	// right front leg
-	*pixels = append(*pixels, *buildLegSegment(4, 1, 450, 490, 0)...)
-	*pixels = append(*pixels, *buildLegSegment(5, 1, 550, 490, 0)...)
-	*pixels = append(*pixels, *buildLegSegment(6, 1, 650, 490, 0)...)
+	*pixels = append(*pixels, *buildMammothSegment(4, 1, 450, 490, 0, limb_sections)...)
+	*pixels = append(*pixels, *buildMammothSegment(5, 1, 550, 490, 0, limb_sections)...)
+	*pixels = append(*pixels, *buildMammothSegment(6, 1, 650, 490, 0, limb_sections)...)
 
 	// left rear leg
-	*pixels = append(*pixels, *buildLegSegment(7, 1, 350, 190, 135)...)
-	*pixels = append(*pixels, *buildLegSegment(8, 1, 270, 110, 135)...)
+	*pixels = append(*pixels, *buildMammothSegment(7, 1, 350, 190, 135, limb_sections)...)
+	*pixels = append(*pixels, *buildMammothSegment(8, 1, 270, 110, 135, limb_sections)...)
 
 	// right rear leg
-	*pixels = append(*pixels, *buildLegSegment(9, 1, 450, 190, 45)...)
-	*pixels = append(*pixels, *buildLegSegment(10, 1, 530, 110, 45)...)
+	*pixels = append(*pixels, *buildMammothSegment(9, 1, 450, 190, 45, limb_sections)...)
+	*pixels = append(*pixels, *buildMammothSegment(10, 1, 530, 110, 45, limb_sections)...)
 
-	// body
-	*pixels = append(*pixels, *buildLegSegment(11, 1, 400, 500, 90)...)
-	*pixels = append(*pixels, *buildLegSegment(12, 1, 400, 400, 90)...)
-	*pixels = append(*pixels, *buildLegSegment(13, 1, 400, 300, 90)...)
+	// torso
+	torso_sections := []Section{
+		sections["all"],
+		sections["torso"],
+	}
+	*pixels = append(*pixels, *buildMammothSegment(11, 1, 400, 500, 90, torso_sections)...)
+	*pixels = append(*pixels, *buildMammothSegment(12, 1, 400, 400, 90, torso_sections)...)
+	*pixels = append(*pixels, *buildMammothSegment(13, 1, 400, 300, 90, torso_sections)...)
 
 	// head
-	*pixels = append(*pixels, *buildLegSegment(14, 1, 410, 550, 270)...)
+	head_sections := []Section{
+		sections["all"],
+		sections["head"],
+	}
+
+	*pixels = append(*pixels, *buildMammothSegment(14, 1, 410, 550, 270, head_sections)...)
 
 	// tusks
-	*pixels = append(*pixels, *buildTuskSegment(15, 1, 350, 550, 225)...)
-	*pixels = append(*pixels, *buildTuskSegment(16, 1, 460, 545, 315)...)
+	tusk_sections := []Section{
+		sections["all"],
+		sections["tusks"],
+	}
+	*pixels = append(*pixels, *buildTuskSegment(15, 1, 350, 550, 225, tusk_sections)...)
+	*pixels = append(*pixels, *buildTuskSegment(16, 1, 460, 545, 315, tusk_sections)...)
 
 	pixelMap := PixelMap{
 		// pixels: buildPixelGrid(),
@@ -75,7 +101,7 @@ func main() {
 		log.Fatal("no patterns registered")
 	}
 
-	initialPattern := patterns["rainbowCircle"]
+	initialPattern := patterns["spiral"]
 
 	controller := NewPixelController(
 		universes,

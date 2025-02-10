@@ -21,18 +21,23 @@ const (
 const CENTER_X = 400
 const CENTER_Y = 400
 
+type Section struct {
+	name  string
+	label string
+}
+
 type Pixel struct {
 	x               int16
 	y               int16
 	color           Color
-	colorOrder      ColorOrder
+	colorOrder      ColorOrder // TODO: implement color correction based on color ordering
 	universe        uint16
 	channelPosition uint16
+	sections        []Section
 }
 
 type PixelMap struct {
-	pixels     *[]Pixel
-	brightness uint8
+	pixels *[]Pixel
 }
 
 type Point struct {

@@ -28,7 +28,7 @@ func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[
 		subscribers: make([]chan *PixelMap, 0),
 	}
 
-	if pattern, ok := patterns["rainbowCircle"]; ok {
+	if pattern, ok := patterns["spiral"]; ok {
 		server.currentPattern = pattern
 	} else {
 		// get first available pattern
@@ -123,29 +123,21 @@ func (s *LEDServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		close(ch)
 	}()
 
-	for {
-		select {
-		case pixelMap, ok := <-ch:
-			if !ok {
-				return
-			}
+	for pixelMap := range ch {
+		data, err := pixelMap.toJSON()
+		if err != nil {
+			log.Printf("error marshaling pixel map: %v", err)
+			continue
+		}
 
-			data, err := pixelMap.toJSON()
-			if err != nil {
-				log.Printf("error marshaling pixel map: %v", err)
-				continue
-			}
-
-			if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
-				log.Printf("error writing to websocket: %v", err)
-				return
-			}
+		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
+			log.Printf("error writing to websocket: %v", err)
+			return
 		}
 	}
 }
 
 func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
-
 	type AllPatternsRequest struct {
 		Patterns Patterns `json:"patterns"`
 	}
@@ -164,11 +156,9 @@ func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("handling pattern update request")
 	patternName := r.PathValue("pattern")
 
-	s.mu.Lock()
-
-	fmt.Println("handling pattern update request")
 	pattern, exists := s.patterns[patternName]
 	if !exists {
 		s.mu.Unlock()
@@ -194,7 +184,6 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 
 	// update the pixel map with the new pattern
 	s.controller.UpdatePattern(pattern)
-	s.mu.Unlock()
 
 	w.WriteHeader(http.StatusOK)
 }

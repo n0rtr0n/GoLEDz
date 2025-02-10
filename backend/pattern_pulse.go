@@ -33,10 +33,6 @@ type PulseParameters struct {
 	Color ColorParameter `json:"color"`
 }
 
-func degreesToRadians(degrees float64) float64 {
-	return degrees * math.Pi / 180
-}
-
 func (p *PulsePattern) Update() {
 	color := p.Parameters.Color.Value
 	speed := p.Parameters.Speed.Value

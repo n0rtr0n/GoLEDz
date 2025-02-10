@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 )
@@ -66,41 +65,6 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 		copy(bytes[startIndex:endIndex], rgbBytes)
 	}
 	return bytes
-}
-
-func (pc *PixelController) sendUniverseData(universe uint16, data []byte) error {
-	defer func() {
-		if r := recover(); r != nil {
-			errStr := fmt.Sprint(r)
-			if strings.Contains(errStr, "could not write unicast UDP") ||
-				strings.Contains(errStr, "no route to host") {
-				log.Printf("Recovered from UDP error: %v", r)
-				if pc.errorTracker.TrackError() {
-					log.Printf("Multiple UDP errors detected, implementing backoff")
-					time.Sleep(5 * time.Second)
-				}
-			} else {
-				panic(r)
-			}
-		}
-	}()
-
-	select {
-	case pc.universes[universe] <- data:
-		return nil
-	case <-time.After(100 * time.Millisecond):
-		return fmt.Errorf("send timeout for universe %d", universe)
-	}
-}
-
-// updateUniverse sends data to a single universe with error handling
-func (pc *PixelController) updateUniverse(universe uint16, data []byte) error {
-	select {
-	case pc.universes[universe] <- data:
-		return nil
-	case <-time.After(100 * time.Millisecond):
-		return fmt.Errorf("send timeout for universe %d", universe)
-	}
 }
 
 // updateAllUniverses updates all universes with current pixel data

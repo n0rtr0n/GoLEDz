@@ -12,7 +12,7 @@ func buildPixelGrid() *[]Pixel {
 	var yPos int16
 	xStart := 100
 	yStart := 100
-	spacing := 10
+	spacing := 20
 	for i := 0; i < 50; i++ {
 		xPos = int16(xStart + i*spacing)
 		for j := 0; j < 50; j++ {
@@ -42,7 +42,7 @@ func build2ChannelsOfPixels() *[]Pixel {
 	return &pixels
 }
 
-func buildLegSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16) *[]Pixel {
+func buildMammothSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16, sections []Section) *[]Pixel {
 
 	pixels := []Pixel{}
 	xPos := xStart
@@ -54,7 +54,7 @@ func buildLegSegment(universe uint16, startingChannelNumber uint16, xStart int16
 	smallPixelsAlongEachSide := int16(12)
 
 	for i := int16(0); i < bigPixelsAlongEachSide; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
 		if i < bigPixelsAlongEachSide-1 {
 			xTranslated, yTranslated := rotate(bigPixelsSpacing, 0, rotationDegrees)
 			xPos += xTranslated
@@ -69,7 +69,7 @@ func buildLegSegment(universe uint16, startingChannelNumber uint16, xStart int16
 	yPos += yTranslated
 
 	for i := int16(0); i < bigPixelsAlongEachSide; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
 		if i < bigPixelsAlongEachSide-1 {
 			xTranslated, yTranslated := rotate(-bigPixelsSpacing, 0, rotationDegrees)
 			xPos += xTranslated
@@ -84,7 +84,7 @@ func buildLegSegment(universe uint16, startingChannelNumber uint16, xStart int16
 	yPos = yStart + yTranslated
 
 	for i := int16(0); i < smallPixelsAlongEachSide; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
 		xTranslated, yTranslated := rotate(smallPixelsSpacing, 0, rotationDegrees)
 		xPos += xTranslated
 		yPos += yTranslated
@@ -94,7 +94,7 @@ func buildLegSegment(universe uint16, startingChannelNumber uint16, xStart int16
 	return &pixels
 }
 
-func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16) *[]Pixel {
+func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16, sections []Section) *[]Pixel {
 	pixels := []Pixel{}
 	xPos := xStart
 	yPos := yStart
@@ -103,7 +103,7 @@ func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int1
 	totalPixels := int16(60)
 
 	for i := int16(0); i < totalPixels; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition})
+		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
 		xTranslated, yTranslated := rotate(pixelsSpacing, 0, rotationDegrees)
 		xPos += xTranslated
 		yPos += yTranslated
@@ -118,4 +118,8 @@ func rotate(x int16, y int16, rotationDegrees int16) (int16, int16) {
 	newY := int16(float64(y)*math.Cos(float64(radians))) + int16(float64(-x)*math.Sin(float64(radians)))
 
 	return newX, newY
+}
+
+func degreesToRadians(degrees float64) float64 {
+	return degrees * math.Pi / 180
 }

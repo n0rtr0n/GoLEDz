@@ -40,6 +40,11 @@ func (c *Color) toString() []byte {
 	}
 }
 
+type Gradient struct {
+	StartColor Color
+	EndColor   Color
+}
+
 func brightnessAdjustedColorPigment(color colorPigment, brightness float64) colorPigment {
 	return colorPigment(math.Round(float64(color) * float64(brightness) / 100))
 }

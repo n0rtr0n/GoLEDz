@@ -7,9 +7,10 @@ import (
 )
 
 type GradientPattern struct {
-	pixelMap   *PixelMap
-	Parameters GradientParameters `json:"parameters"`
-	Label      string             `json:"label,omitempty"`
+	pixelMap     *PixelMap
+	Parameters   GradientParameters `json:"parameters"`
+	Label        string             `json:"label,omitempty"`
+	currentAngle float64
 }
 
 func (p *GradientPattern) UpdateParameters(parameters AdjustableParameters) error {
@@ -21,25 +22,34 @@ func (p *GradientPattern) UpdateParameters(parameters AdjustableParameters) erro
 
 	p.Parameters.Color1.Update(newParams.Color1.Value)
 	p.Parameters.Color2.Update(newParams.Color2.Value)
-	p.Parameters.Rotation.Update(newParams.Rotation.Value)
+	p.Parameters.Speed.Update(newParams.Speed.Value)
+	p.Parameters.Reversed.Update(newParams.Reversed.Value)
 
 	return nil
 }
 
 type GradientParameters struct {
-	Color1   ColorParameter `json:"color1"`
-	Color2   ColorParameter `json:"color2"`
-	Rotation FloatParameter `json:"rotation"`
+	Color1   ColorParameter   `json:"color1"`
+	Color2   ColorParameter   `json:"color2"`
+	Speed    FloatParameter   `json:"speed"`
+	Reversed BooleanParameter `json:"reversed"`
 }
 
 func (p *GradientPattern) Update() {
 	color1 := p.Parameters.Color1.Value
 	color2 := p.Parameters.Color2.Value
-	angle := p.Parameters.Rotation.Value
+	speed := p.Parameters.Speed.Value
+	reversed := p.Parameters.Reversed.Value
 
 	for i, pixel := range *p.pixelMap.pixels {
-		(*p.pixelMap.pixels)[i].color = GetColorAtPoint(Point{pixel.x, pixel.y}, color1, color2, angle)
+		(*p.pixelMap.pixels)[i].color = GetColorAtPoint(Point{pixel.x, pixel.y}, color1, color2, p.currentAngle)
 	}
+	if reversed {
+		p.currentAngle += speed
+	} else {
+		p.currentAngle = (p.currentAngle - speed) + MAX_DEGREES
+	}
+	p.currentAngle = math.Mod(p.currentAngle, MAX_DEGREES)
 }
 
 func (p *GradientPattern) GetName() string {

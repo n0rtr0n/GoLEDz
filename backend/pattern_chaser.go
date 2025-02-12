@@ -28,7 +28,7 @@ func (p *ChaserPattern) UpdateParameters(parameters AdjustableParameters) error 
 	p.Parameters.Spacing.Update(newParams.Spacing.Value)
 	p.Parameters.Color.Update(newParams.Color.Value)
 	p.Parameters.Reversed.Update(newParams.Reversed.Value)
-	p.Parameters.Rainbow.Update(newParams.Reversed.Value)
+	p.Parameters.Rainbow.Update(newParams.Rainbow.Value)
 	return nil
 }
 

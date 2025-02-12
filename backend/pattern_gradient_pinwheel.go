@@ -55,6 +55,7 @@ func (p *GradientPinwheelPattern) Update() {
 		saturation := math.Mod(p.currentSaturation+fractionDegrees, MAX_SATURATION)
 
 		c := colorful.Hsv(hueVal, saturation, 1.0)
+
 		color := Color{
 			R: colorPigment(c.R * 255),
 			G: colorPigment(c.G * 255),

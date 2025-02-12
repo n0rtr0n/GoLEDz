@@ -83,7 +83,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 			Divisions: IntParameter{
 				Min:   intPointer(1),
-				Max:   20,
+				Max:   15,
 				Value: 4,
 				Type:  "int",
 			},
@@ -114,11 +114,15 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				},
 				Type: "color",
 			},
-			Rotation: FloatParameter{
+			Speed: FloatParameter{
 				Min:   floatPointer(0.0),
-				Max:   360.0,
-				Value: 0.0,
+				Max:   20.0,
+				Value: 1.0,
 				Type:  "float",
+			},
+			Reversed: BooleanParameter{
+				Value: false,
+				Type:  "bool",
 			},
 		},
 		Label: "Gradient",
@@ -184,13 +188,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			},
 			MaxTurns: IntParameter{
 				Min:   intPointer(1),
-				Max:   20,
+				Max:   15,
 				Value: 3,
 				Type:  "int",
 			},
 			Width: FloatParameter{
 				Min:   floatPointer(10.0),
-				Max:   100.0,
+				Max:   60.0,
 				Value: 40.0,
 				Type:  "float",
 			},
@@ -202,7 +206,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: RainbowParameters{
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
-				Max:   50.0,
+				Max:   10.0,
 				Value: 1.0,
 				Type:  "float",
 			},
@@ -258,6 +262,12 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				},
 				Type: "color",
 			},
+			Rotation: FloatParameter{
+				Min:   floatPointer(1.0),
+				Max:   360.0,
+				Value: 0.0,
+				Type:  "float",
+			},
 		},
 		Label: "Vertical Stripes",
 	}
@@ -267,20 +277,20 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: ChaserParameters{
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
-				Max:   50.0,
+				Max:   5.0,
 				Value: 1.0,
 				Type:  "float",
 			},
 			Size: IntParameter{
 				Min:   intPointer(1),
 				Max:   100,
-				Value: 5,
+				Value: 10,
 				Type:  "int",
 			},
 			Spacing: IntParameter{
 				Min:   intPointer(1),
 				Max:   100,
-				Value: 5,
+				Value: 10,
 				Type:  "int",
 			},
 			Color: ColorParameter{

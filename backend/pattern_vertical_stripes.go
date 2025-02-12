@@ -23,19 +23,23 @@ func (p *VerticalStripesPattern) UpdateParameters(parameters AdjustableParameter
 	p.Parameters.Speed.Update(newParams.Speed.Value)
 	p.Parameters.Size.Update(newParams.Size.Value)
 	p.Parameters.Color.Update(newParams.Color.Value)
+	p.Parameters.Rotation.Update(newParams.Rotation.Value)
 	return nil
 }
 
 type VerticalStripesParameters struct {
-	Speed FloatParameter `json:"speed"`
-	Size  FloatParameter `json:"size"`
-	Color ColorParameter `json:"color"`
+	Speed    FloatParameter `json:"speed"`
+	Size     FloatParameter `json:"size"`
+	Color    ColorParameter `json:"color"`
+	Rotation FloatParameter `json:"rotation"`
 }
 
 func (p *VerticalStripesPattern) Update() {
 	speed := p.Parameters.Speed.Value
 	size := p.Parameters.Size.Value
 	color := p.Parameters.Color.Value
+	// TODO: implement rotation
+	// rotation := p.Parameters.Rotation.Value
 
 	min := int16(p.currentPosition - size)
 	max := int16(p.currentPosition + size)

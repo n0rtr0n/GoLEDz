@@ -239,9 +239,9 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		},
 		Label: "Solid Color Fade",
 	}
-	verticalStripesPattern := VerticalStripesPattern{
+	stripesPattern := StripesPattern{
 		pixelMap: pixelMap,
-		Parameters: VerticalStripesParameters{
+		Parameters: StripesParameters{
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
 				Max:   100.0,
@@ -263,13 +263,19 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Type: "color",
 			},
 			Rotation: FloatParameter{
-				Min:   floatPointer(1.0),
+				Min:   floatPointer(0.0),
 				Max:   360.0,
 				Value: 0.0,
 				Type:  "float",
 			},
+			Stripes: IntParameter{
+				Min:   intPointer(0),
+				Max:   10,
+				Value: 1,
+				Type:  "int",
+			},
 		},
-		Label: "Vertical Stripes",
+		Label: "Stripes",
 	}
 
 	chaserPattern := ChaserPattern{
@@ -321,7 +327,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 	patterns[rainbowPattern.GetName()] = &rainbowPattern
 	patterns[solidColorPattern.GetName()] = &solidColorPattern
 	patterns[solidColorFadePattern.GetName()] = &solidColorFadePattern
-	patterns[verticalStripesPattern.GetName()] = &verticalStripesPattern
+	patterns[stripesPattern.GetName()] = &stripesPattern
 	patterns[chaserPattern.GetName()] = &chaserPattern
 	patterns[pulsePattern.GetName()] = &pulsePattern
 	patterns[spiralPattern.GetName()] = &spiralPattern

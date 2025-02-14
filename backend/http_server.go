@@ -51,6 +51,9 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 	mux.HandleFunc("GET /patterns", s.handleGetPatterns)
 	mux.HandleFunc("PUT /patterns/{pattern}", s.handleUpdatePattern)
 
+	// health check
+	mux.HandleFunc("GET /health", s.handleHealthCheck)
+
 	return mux
 }
 
@@ -186,4 +189,8 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 	s.controller.UpdatePattern(pattern)
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *LEDServer) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Healthy")
 }

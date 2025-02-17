@@ -324,6 +324,20 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Label: "Chaser",
 	}
 
+	randomPattern := RandomPattern{
+		pixelMap: pixelMap,
+		Parameters: RandomParameters{
+			SwitchInterval: FloatParameter{
+				Min:   floatPointer(5.0),
+				Max:   60.0,
+				Value: 15.0,
+				Type:  "float",
+			},
+		},
+		patterns: patterns, // reference to all other patterns
+		Label:    "Random Pattern",
+	}
+
 	patterns[rainbowCirclePattern.GetName()] = &rainbowCirclePattern
 	patterns[rainbowPinwheelPattern.GetName()] = &rainbowPinwheelPattern
 	patterns[gradientPinwheelPattern.GetName()] = &gradientPinwheelPattern
@@ -337,6 +351,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 	patterns[chaserPattern.GetName()] = &chaserPattern
 	patterns[pulsePattern.GetName()] = &pulsePattern
 	patterns[spiralPattern.GetName()] = &spiralPattern
+	patterns[randomPattern.GetName()] = &randomPattern
 
 	return patterns
 }

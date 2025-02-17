@@ -20,6 +20,7 @@ type PixelController struct {
 	patternMu        sync.RWMutex
 	onUpdate         func(*PixelMap)
 	pixelMap         *PixelMap
+	mu               sync.RWMutex
 }
 
 func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorTracker, fps int, initialPattern Pattern, pixelMap *PixelMap) *PixelController {
@@ -125,12 +126,21 @@ func (pc *PixelController) Stop() {
 	pc.running = false
 }
 
-func (pc *PixelController) UpdatePattern(pattern Pattern) {
-	fmt.Println("Switching to pattern: ")
-	fmt.Println(pattern.GetName())
-	pc.patternMu.Lock()
+func (pc *PixelController) SetPattern(pattern Pattern) {
+	pc.mu.Lock()
+	defer pc.mu.Unlock()
+
+	// If we're switching from random pattern, stop it
+	if randomPattern, ok := pc.currentPattern.(*RandomPattern); ok {
+		randomPattern.Stop()
+	}
+
 	pc.currentPattern = pattern
-	pc.patternMu.Unlock()
+
+	// If we're switching to random pattern, start it
+	if randomPattern, ok := pattern.(*RandomPattern); ok {
+		randomPattern.Start()
+	}
 }
 
 func (pc *PixelController) SetUpdateCallback(callback func(*PixelMap)) {

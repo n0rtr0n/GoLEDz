@@ -186,7 +186,7 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// update the pixel map with the new pattern
-	s.controller.UpdatePattern(pattern)
+	s.controller.SetPattern(pattern)
 
 	w.WriteHeader(http.StatusOK)
 }

@@ -141,6 +141,11 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		},
 		Label: "Solid Color",
 	}
+	lightsOffPattern := LightsOffPattern{
+		pixelMap:   pixelMap,
+		Label:      "Lights Off",
+		Parameters: LightsOffParameters{},
+	}
 	pulsePattern := PulsePattern{
 		pixelMap: pixelMap,
 		Parameters: PulseParameters{
@@ -326,6 +331,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 	patterns[rainbowDiagonalPattern.GetName()] = &rainbowDiagonalPattern
 	patterns[rainbowPattern.GetName()] = &rainbowPattern
 	patterns[solidColorPattern.GetName()] = &solidColorPattern
+	patterns[lightsOffPattern.GetName()] = &lightsOffPattern
 	patterns[solidColorFadePattern.GetName()] = &solidColorFadePattern
 	patterns[stripesPattern.GetName()] = &stripesPattern
 	patterns[chaserPattern.GetName()] = &chaserPattern

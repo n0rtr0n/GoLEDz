@@ -21,7 +21,6 @@ func (p *GradientPinwheelPattern) UpdateParameters(parameters AdjustableParamete
 		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
 		return errors.New(err)
 	}
-	fmt.Println(newParams)
 
 	p.Parameters.Speed.Update(newParams.Speed.Value)
 	p.Parameters.Divisions.Update(newParams.Divisions.Value)

@@ -66,17 +66,17 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 	// websocket route for visualizer
 	mux.HandleFunc("GET /socket", s.handleWebSocket)
 
-	// pattern management routes
+	// pattern management
 	mux.HandleFunc("GET /patterns", s.handleGetPatterns)
 	mux.HandleFunc("PUT /patterns/{pattern}", s.handleUpdatePattern)
 
 	// health check
 	mux.HandleFunc("GET /health", s.handleHealthCheck)
 
-	// Add transition config route
+	// transition config
 	mux.HandleFunc("PUT /transition", s.handleUpdateTransition)
 
-	// Add mode management route
+	// mode management
 	mux.HandleFunc("PUT /modes/{mode}", s.handleSetMode)
 	mux.HandleFunc("DELETE /modes/current", s.handleDisableMode)
 
@@ -134,7 +134,7 @@ func (s *LEDServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	ch := make(chan *PixelMap, 10) // Buffer of 10 to prevent blocking
+	ch := make(chan *PixelMap, 10) // buffer of 10 to prevent blocking
 
 	s.mu.Lock()
 	s.subscribers = append(s.subscribers, ch)
@@ -187,7 +187,6 @@ func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
 func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {
 	patternName := r.PathValue("pattern")
 
-	// Try patterns
 	pattern, exists := s.patterns[patternName]
 	if !exists {
 		http.Error(w, "Pattern not found", http.StatusNotFound)
@@ -205,7 +204,7 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Disable any active mode before setting pattern
+	// disable any active mode before setting pattern
 	if s.controller.currentMode != nil {
 		s.controller.currentMode.Stop()
 		s.controller.currentMode = nil
@@ -233,13 +232,11 @@ func (s *LEDServer) handleUpdateTransition(w http.ResponseWriter, r *http.Reques
 		Enabled:  configReq.Enabled,
 	}
 
-	// Update controller's transition duration
 	s.controller.SetTransitionDuration(duration)
 
 	w.WriteHeader(http.StatusOK)
 }
 
-// New handler for enabling modes
 func (s *LEDServer) handleSetMode(w http.ResponseWriter, r *http.Request) {
 	modeName := r.PathValue("mode")
 
@@ -249,7 +246,7 @@ func (s *LEDServer) handleSetMode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Only try to decode parameters if there's a request body
+	// only try to decode parameters if there's a request body
 	if r.ContentLength > 0 {
 		parameters := mode.GetPatternUpdateRequest()
 		if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
@@ -266,7 +263,6 @@ func (s *LEDServer) handleSetMode(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// New handler for disabling current mode
 func (s *LEDServer) handleDisableMode(w http.ResponseWriter, r *http.Request) {
 	if s.controller.currentMode != nil {
 		s.controller.currentMode.Stop()

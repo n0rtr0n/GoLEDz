@@ -96,7 +96,9 @@ func main() {
 		defer close(universe)
 	}
 
-	// Create a temporary initial pattern
+	// create a temporary initial pattern
+	// TODO: refactor this. it's kinda weird that we have to
+	// create a fake pattern just to initialize the controller
 	tempPattern := &SolidColorPattern{
 		pixelMap: &pixelMap,
 		Parameters: SolidColorParameters{
@@ -106,7 +108,7 @@ func main() {
 		},
 	}
 
-	// Create controller with temp pattern
+	// create controller with temp pattern
 	controller := NewPixelController(
 		universes,
 		errorTracker,
@@ -116,19 +118,18 @@ func main() {
 		config.TransitionDuration,
 	)
 
-	// Now register patterns with controller
+	// now register patterns with controller
 	patterns := registerPatterns(&pixelMap, controller)
 	if len(patterns) == 0 {
 		log.Fatal("no patterns registered")
 	}
 
-	// Set the real initial pattern
+	// set the real initial pattern
 	controller.SetPattern(patterns["spiral"])
 
-	// Register modes
 	modes := registerModes(&pixelMap, patterns)
 
-	// Finally create server
+	// finally create server
 	server := NewLEDServer(controller, &pixelMap, patterns, modes, &ServerConfig{
 		TransitionDuration: config.TransitionDuration,
 		TransitionEnabled:  config.TransitionEnabled,

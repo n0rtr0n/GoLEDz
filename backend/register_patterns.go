@@ -8,13 +8,13 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 		Parameters: RainbowDiagonalParameters{
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
-				Max:   25.0,
+				Max:   20.0,
 				Value: 6.0,
 				Type:  "float",
 			},
 			Size: FloatParameter{
 				Min:   floatPointer(0.1),
-				Max:   100.0,
+				Max:   1.0,
 				Value: 0.5,
 				Type:  "float",
 			},
@@ -193,14 +193,14 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 			},
 			MaxTurns: IntParameter{
 				Min:   intPointer(1),
-				Max:   15,
-				Value: 3,
+				Max:   12,
+				Value: 4,
 				Type:  "int",
 			},
 			Width: FloatParameter{
 				Min:   floatPointer(10.0),
-				Max:   60.0,
-				Value: 40.0,
+				Max:   40.0,
+				Value: 30.0,
 				Type:  "float",
 			},
 		},
@@ -337,20 +337,6 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 	patterns[chaserPattern.GetName()] = &chaserPattern
 	patterns[pulsePattern.GetName()] = &pulsePattern
 	patterns[spiralPattern.GetName()] = &spiralPattern
-
-	// randomMode := RandomMode{
-	// 	pixelMap: pixelMap,
-	// 	patterns: patterns,
-	// 	Parameters: RandomParameters{
-	// 		SwitchInterval: FloatParameter{
-	// 			Min:   floatPointer(10.0), // 10 second minimum
-	// 			Max:   10.0,               // 10 second maximum
-	// 			Value: 10.0,               // Start at 10 seconds
-	// 			Type:  "float",
-	// 		},
-	// 	},
-	// 	Label: "Random",
-	// }
 
 	return patterns
 }

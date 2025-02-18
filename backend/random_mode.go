@@ -57,12 +57,12 @@ func (m *RandomMode) Start() {
 	m.lastPatternSwitch = time.Now()
 	m.inTransition = false
 
-	// Select and set initial pattern
+	// select and set initial pattern
 	m.switchToRandomPattern()
 	if m.targetPattern != nil {
 		log.Printf("Random mode starting with pattern: %s", m.targetPattern.GetName())
 		m.currentPattern = m.targetPattern
-		m.currentPattern.Update() // Make sure initial pattern is updated
+		m.currentPattern.Update() // make sure initial pattern is updated
 		m.targetPattern = nil
 	}
 }
@@ -88,19 +88,19 @@ func (m *RandomMode) Update() {
 		return
 	}
 
-	// Always update current pattern
+	// always update current pattern
 	if m.currentPattern != nil {
 		m.currentPattern.Update()
 	}
 
-	// Check if it's time for a new pattern (after interval X)
+	// check if it's time for a new pattern (after interval X)
 	if !m.inTransition && time.Since(m.lastPatternSwitch).Seconds() >= m.Parameters.SwitchInterval.Value {
 		fmt.Printf("Starting new pattern transition. Current: %v\n", m.currentPattern.GetName())
 		m.switchToRandomPattern()
 		if m.targetPattern != nil {
 			fmt.Printf("Selected target pattern: %v\n", m.targetPattern.GetName())
 			m.inTransition = true
-			// Send the pattern change request through the controller's channel
+			// send the pattern change request through the controller's channel
 			select {
 			case m.controller.patternChange <- m.targetPattern:
 				fmt.Printf("Started transition to new pattern\n")
@@ -115,7 +115,7 @@ func (m *RandomMode) Update() {
 func (m *RandomMode) switchToRandomPattern() {
 	var availablePatterns []Pattern
 	for name, pattern := range m.patterns {
-		// Don't include current pattern in available patterns
+		// don't include current pattern in available patterns
 		if name != m.GetName() && name != "lightsOff" && pattern != m.currentPattern {
 			availablePatterns = append(availablePatterns, pattern)
 		}
@@ -133,28 +133,26 @@ func (m *RandomMode) randomizeParameters() {
 		return
 	}
 
-	// Get the pattern's parameters directly from the pattern interface
+	// get the pattern's parameters directly from the pattern interface
 	params := reflect.ValueOf(m.targetPattern).Elem().FieldByName("Parameters")
 	if !params.IsValid() {
 		log.Printf("Pattern %s has no Parameters field", m.targetPattern.GetName())
 		return
 	}
 
-	// Iterate through all fields in the parameters struct
 	for i := 0; i < params.NumField(); i++ {
 		field := params.Field(i)
 		if !field.CanInterface() {
 			continue
 		}
 
-		// If the field implements Parameter interface, randomize it
+		// if the field implements Parameter interface, randomize it
 		if param, ok := field.Addr().Interface().(Parameter); ok {
 			param.Randomize()
 		}
 	}
 }
 
-// Update TransitionComplete to handle the pattern state updates
 func (m *RandomMode) TransitionComplete() {
 	fmt.Printf("Transition complete. Moving from %v to %v\n",
 		m.currentPattern.GetName(), m.targetPattern.GetName())

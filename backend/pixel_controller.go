@@ -21,8 +21,6 @@ type PixelController struct {
 	patternMu        sync.RWMutex
 	onUpdate         func(*PixelMap)
 	pixelMap         *PixelMap
-	mu               sync.RWMutex
-	workingPixels    []Pixel
 	transition       *struct {
 		sourcePattern Pattern
 		targetPattern Pattern
@@ -83,19 +81,18 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 	return bytes
 }
 
-// updateAllUniverses updates all universes with current pixel data
+// updates all universes with current pixel data
 func (pc *PixelController) updateAllUniverses() error {
 	pc.transitionMutex.RLock()
 	defer pc.transitionMutex.RUnlock()
 
-	// Let mode or pattern handle updates
 	pc.Update()
 
 	if pc.onUpdate != nil {
 		pc.onUpdate(pc.pixelMap)
 	}
 
-	// Send updated pixels to universes
+	// send updated pixels to universes
 	for universe := range pc.universes {
 		data := pc.prepareUniverseData(universe)
 		pc.universes[universe] <- data
@@ -177,10 +174,9 @@ func (pc *PixelController) SetUpdateCallback(callback func(*PixelMap)) {
 }
 
 func (pc *PixelController) Update() {
-	// Handle any pending pattern changes
 	select {
 	case newPattern := <-pc.patternChange:
-		// Create transition pixels
+		// reate transition pixels
 		sourcePixels := make([]Pixel, len(*pc.pixelMap.pixels))
 		targetPixels := make([]Pixel, len(*pc.pixelMap.pixels))
 		copy(sourcePixels, *pc.pixelMap.pixels)
@@ -202,10 +198,10 @@ func (pc *PixelController) Update() {
 			targetPixels:  targetPixels,
 		}
 	default:
-		// No pattern change pending, continue with normal update
+		// no pattern change pending, continue with normal update
 	}
 
-	// Handle active transition
+	// handle active transition
 	if pc.transition != nil {
 		elapsed := time.Since(pc.transition.startTime)
 		progress := float64(elapsed) / float64(pc.transition.duration)
@@ -229,7 +225,7 @@ func (pc *PixelController) Update() {
 		return
 	}
 
-	// Normal pattern update
+	// normal pattern update
 	if pc.currentMode != nil {
 		pc.currentMode.Update()
 	} else if pc.currentPattern != nil {
@@ -243,44 +239,11 @@ func (pc *PixelController) SetTransitionDuration(duration time.Duration) {
 
 	pc.transitionDuration = duration
 
-	// If there's an active transition, update its duration
+	// if there's an active transition, update its duration
 	if pc.transition != nil {
 		elapsed := time.Since(pc.transition.startTime)
 		progress := float64(elapsed) / float64(pc.transition.duration)
 		pc.transition.startTime = time.Now().Add(-time.Duration(float64(duration) * progress))
 		pc.transition.duration = duration
 	}
-}
-
-func (pc *PixelController) transitionToPattern(pattern Pattern) error {
-	pc.transitionMutex.Lock()
-	defer pc.transitionMutex.Unlock()
-
-	// Don't start a new transition if one is in progress
-	if pc.transition != nil {
-		return fmt.Errorf("transition already in progress")
-	}
-
-	// Create dedicated pixel maps for the transition
-	sourcePixels := make([]Pixel, len(*pc.pixelMap.pixels))
-	targetPixels := make([]Pixel, len(*pc.pixelMap.pixels))
-	copy(sourcePixels, *pc.pixelMap.pixels)
-	copy(targetPixels, *pc.pixelMap.pixels)
-
-	pc.transition = &struct {
-		sourcePattern Pattern
-		targetPattern Pattern
-		startTime     time.Time
-		duration      time.Duration
-		sourcePixels  []Pixel
-		targetPixels  []Pixel
-	}{
-		sourcePattern: pc.currentPattern,
-		targetPattern: pattern,
-		startTime:     time.Now(),
-		duration:      pc.transitionDuration,
-		sourcePixels:  sourcePixels,
-		targetPixels:  targetPixels,
-	}
-	return nil
 }

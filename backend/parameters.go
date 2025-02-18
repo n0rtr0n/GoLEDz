@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 )
 
 type colorPigment uint8
@@ -16,10 +17,12 @@ const MAX_BRIGHTNESS_VALUE float64 = 50.0
 // internal parameters are set at the time the pattern is registered
 // each adjustable parameter implements the update method, which
 // provides validation at the time the new value is set
-type AdjustableParameter interface {
+type Parameter interface {
 	Get() interface{}
 	Update(value interface{}) error
+	Randomize()
 }
+
 type AdjustableParameters interface{}
 
 type ParametersUpdateRequest struct {
@@ -85,6 +88,14 @@ func (p *ColorParameter) Update(value interface{}) error {
 	return nil
 }
 
+func (p *ColorParameter) Randomize() {
+	p.Value = Color{
+		R: colorPigment(rand.Intn(int(MAX_PIGMENT_VALUE) + 1)),
+		G: colorPigment(rand.Intn(int(MAX_PIGMENT_VALUE) + 1)),
+		B: colorPigment(rand.Intn(int(MAX_PIGMENT_VALUE) + 1)),
+	}
+}
+
 type FloatParameter struct {
 	Min   *float64 `json:"min,omitempty"`
 	Max   float64  `json:"max,omitempty"`
@@ -113,6 +124,13 @@ func (p *FloatParameter) Update(value interface{}) error {
 	}
 	p.Value = newValue
 	return nil
+}
+
+func (p *FloatParameter) Randomize() {
+	if p.Min == nil || p.Max <= *p.Min {
+		return
+	}
+	p.Value = *p.Min + rand.Float64()*(p.Max-*p.Min)
 }
 
 type IntParameter struct {
@@ -145,9 +163,20 @@ func (p *IntParameter) Update(value interface{}) error {
 	return nil
 }
 
+func (p *IntParameter) Randomize() {
+	if p.Min == nil || p.Max <= *p.Min {
+		return
+	}
+	p.Value = *p.Min + rand.Intn(p.Max-*p.Min+1)
+}
+
 type BooleanParameter struct {
 	Value bool   `json:"value"`
 	Type  string `json:"type,omitempty"`
+}
+
+func (p *BooleanParameter) Get() interface{} {
+	return p.Value
 }
 
 func (p *BooleanParameter) Update(value interface{}) error {
@@ -159,6 +188,6 @@ func (p *BooleanParameter) Update(value interface{}) error {
 	return nil
 }
 
-func (p *BooleanParameter) Get() interface{} {
-	return p.Value
+func (p *BooleanParameter) Randomize() {
+	p.Value = rand.Float32() < 0.5
 }

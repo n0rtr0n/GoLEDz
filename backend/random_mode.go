@@ -133,54 +133,25 @@ func (m *RandomMode) randomizeParameters() {
 		return
 	}
 
-	// Get the pattern's original parameters with min/max values
-	var originalParams AdjustableParameters
-	switch p := m.targetPattern.(type) {
-	case *StripesPattern:
-		originalParams = p.Parameters
-	case *RainbowDiagonalPattern:
-		originalParams = p.Parameters
-	case *RainbowCirclePattern:
-		originalParams = p.Parameters
-	case *GradientPattern:
-		originalParams = p.Parameters
-	case *PulsePattern:
-		originalParams = p.Parameters
-	case *SpiralPattern:
-		originalParams = p.Parameters
-	// Add other pattern types as needed
-	default:
-		log.Printf("Unknown pattern type: %T", m.targetPattern)
+	// Get the pattern's parameters directly from the pattern interface
+	params := reflect.ValueOf(m.targetPattern).Elem().FieldByName("Parameters")
+	if !params.IsValid() {
+		log.Printf("Pattern %s has no Parameters field", m.targetPattern.GetName())
 		return
 	}
 
-	// Create a deep copy of the parameters
-	paramsValue := reflect.New(reflect.TypeOf(originalParams))
-	paramsValue.Elem().Set(reflect.ValueOf(originalParams))
-	params := paramsValue.Elem()
-
-	log.Printf("Pattern: %s, Parameters type: %T", m.targetPattern.GetName(), originalParams)
-	log.Printf("Number of fields: %d", params.NumField())
-
-	// Iterate through fields and randomize
+	// Iterate through all fields in the parameters struct
 	for i := 0; i < params.NumField(); i++ {
 		field := params.Field(i)
-		fieldType := params.Type().Field(i)
-
-		if !field.CanAddr() {
+		if !field.CanInterface() {
 			continue
 		}
 
-		fieldPtr := field.Addr().Interface()
-		if param, ok := fieldPtr.(Parameter); ok {
-			log.Printf("Before randomization - %s: %+v", fieldType.Name, fieldPtr)
+		// If the field implements Parameter interface, randomize it
+		if param, ok := field.Addr().Interface().(Parameter); ok {
 			param.Randomize()
-			log.Printf("After randomization - %s: %+v", fieldType.Name, fieldPtr)
 		}
 	}
-
-	m.targetPattern.UpdateParameters(params.Interface().(AdjustableParameters))
-	log.Printf("Successfully randomized parameters for pattern: %s", m.targetPattern.GetName())
 }
 
 // Update TransitionComplete to handle the pattern state updates

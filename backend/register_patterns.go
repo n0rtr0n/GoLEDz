@@ -338,5 +338,19 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 	patterns[pulsePattern.GetName()] = &pulsePattern
 	patterns[spiralPattern.GetName()] = &spiralPattern
 
+	// randomMode := RandomMode{
+	// 	pixelMap: pixelMap,
+	// 	patterns: patterns,
+	// 	Parameters: RandomParameters{
+	// 		SwitchInterval: FloatParameter{
+	// 			Min:   floatPointer(10.0), // 10 second minimum
+	// 			Max:   10.0,               // 10 second maximum
+	// 			Value: 10.0,               // Start at 10 seconds
+	// 			Type:  "float",
+	// 		},
+	// 	},
+	// 	Label: "Random",
+	// }
+
 	return patterns
 }

@@ -33,6 +33,7 @@ type PixelController struct {
 	}
 	transitionMutex    sync.RWMutex
 	transitionDuration time.Duration
+	patternChange      chan Pattern
 }
 
 func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorTracker, fps int, initialPattern Pattern, pixelMap *PixelMap, transitionDuration time.Duration) *PixelController {
@@ -48,6 +49,7 @@ func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorT
 		currentPattern:     initialPattern,
 		pixelMap:           pixelMap,
 		transitionDuration: transitionDuration,
+		patternChange:      make(chan Pattern, 1), // Buffer of 1 to prevent blocking
 	}
 }
 
@@ -156,11 +158,12 @@ func (pc *PixelController) SetPattern(pattern interface{}) error {
 		return nil
 
 	case Pattern:
-		if pc.currentMode != nil {
-			pc.currentMode.Stop()
-			pc.currentMode = nil
+		select {
+		case pc.patternChange <- p:
+			return nil
+		default:
+			return fmt.Errorf("pattern change channel full, try again later")
 		}
-		return pc.transitionToPattern(p)
 
 	default:
 		return fmt.Errorf("unknown pattern type: %T", pattern)
@@ -174,15 +177,39 @@ func (pc *PixelController) SetUpdateCallback(callback func(*PixelMap)) {
 }
 
 func (pc *PixelController) Update() {
-	pc.transitionMutex.RLock()
-	defer pc.transitionMutex.RUnlock()
+	// Handle any pending pattern changes
+	select {
+	case newPattern := <-pc.patternChange:
+		// Create transition pixels
+		sourcePixels := make([]Pixel, len(*pc.pixelMap.pixels))
+		targetPixels := make([]Pixel, len(*pc.pixelMap.pixels))
+		copy(sourcePixels, *pc.pixelMap.pixels)
+		copy(targetPixels, *pc.pixelMap.pixels)
 
-	// Handle transitions first (applies to both modes and normal patterns)
+		pc.transition = &struct {
+			sourcePattern Pattern
+			targetPattern Pattern
+			startTime     time.Time
+			duration      time.Duration
+			sourcePixels  []Pixel
+			targetPixels  []Pixel
+		}{
+			sourcePattern: pc.currentPattern,
+			targetPattern: newPattern,
+			startTime:     time.Now(),
+			duration:      pc.transitionDuration,
+			sourcePixels:  sourcePixels,
+			targetPixels:  targetPixels,
+		}
+	default:
+		// No pattern change pending, continue with normal update
+	}
+
+	// Handle active transition
 	if pc.transition != nil {
 		elapsed := time.Since(pc.transition.startTime)
 		progress := float64(elapsed) / float64(pc.transition.duration)
 
-		// Use DefaultTransitionFromPattern for consistent transition behavior
 		DefaultTransitionFromPattern(
 			pc.transition.targetPattern,
 			pc.transition.sourcePattern,
@@ -202,7 +229,7 @@ func (pc *PixelController) Update() {
 		return
 	}
 
-	// No transition in progress, do normal updates
+	// Normal pattern update
 	if pc.currentMode != nil {
 		pc.currentMode.Update()
 	} else if pc.currentPattern != nil {

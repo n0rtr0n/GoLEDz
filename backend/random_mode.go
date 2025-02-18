@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"reflect"
 	"time"
 )
 
@@ -87,27 +88,26 @@ func (m *RandomMode) Update() {
 		return
 	}
 
+	// Always update current pattern
 	if m.currentPattern != nil {
 		m.currentPattern.Update()
 	}
 
-	if m.inTransition {
-		return
-	}
-
-	if time.Since(m.lastPatternSwitch).Seconds() >= m.Parameters.SwitchInterval.Value {
+	// Check if it's time for a new pattern (after interval X)
+	if !m.inTransition && time.Since(m.lastPatternSwitch).Seconds() >= m.Parameters.SwitchInterval.Value {
+		fmt.Printf("Starting new pattern transition. Current: %v\n", m.currentPattern.GetName())
 		m.switchToRandomPattern()
 		if m.targetPattern != nil {
-			go func() {
-				m.inTransition = true
-				if err := m.controller.SetPattern(m.targetPattern); err != nil {
-					m.inTransition = false
-					return
-				}
-				m.currentPattern = m.targetPattern
-				m.targetPattern = nil
-				m.lastPatternSwitch = time.Now()
-			}()
+			fmt.Printf("Selected target pattern: %v\n", m.targetPattern.GetName())
+			m.inTransition = true
+			// Send the pattern change request through the controller's channel
+			select {
+			case m.controller.patternChange <- m.targetPattern:
+				fmt.Printf("Started transition to new pattern\n")
+			default:
+				fmt.Printf("Pattern change channel blocked, skipping transition\n")
+				m.inTransition = false
+			}
 		}
 	}
 }
@@ -115,13 +115,15 @@ func (m *RandomMode) Update() {
 func (m *RandomMode) switchToRandomPattern() {
 	var availablePatterns []Pattern
 	for name, pattern := range m.patterns {
-		if name != m.GetName() && name != "lightsOff" {
+		// Don't include current pattern in available patterns
+		if name != m.GetName() && name != "lightsOff" && pattern != m.currentPattern {
 			availablePatterns = append(availablePatterns, pattern)
 		}
 	}
 
 	if len(availablePatterns) > 0 {
 		m.targetPattern = availablePatterns[rand.Intn(len(availablePatterns))]
+		fmt.Printf("Randomly selected pattern: %v\n", m.targetPattern.GetName())
 		m.randomizeParameters()
 	}
 }
@@ -130,10 +132,63 @@ func (m *RandomMode) randomizeParameters() {
 	if m.targetPattern == nil {
 		return
 	}
-	// Copy existing randomization logic from pattern_random.go
+
+	// Get the pattern's original parameters with min/max values
+	var originalParams AdjustableParameters
+	switch p := m.targetPattern.(type) {
+	case *StripesPattern:
+		originalParams = p.Parameters
+	case *RainbowDiagonalPattern:
+		originalParams = p.Parameters
+	case *RainbowCirclePattern:
+		originalParams = p.Parameters
+	case *GradientPattern:
+		originalParams = p.Parameters
+	case *PulsePattern:
+		originalParams = p.Parameters
+	case *SpiralPattern:
+		originalParams = p.Parameters
+	// Add other pattern types as needed
+	default:
+		log.Printf("Unknown pattern type: %T", m.targetPattern)
+		return
+	}
+
+	// Create a deep copy of the parameters
+	paramsValue := reflect.New(reflect.TypeOf(originalParams))
+	paramsValue.Elem().Set(reflect.ValueOf(originalParams))
+	params := paramsValue.Elem()
+
+	log.Printf("Pattern: %s, Parameters type: %T", m.targetPattern.GetName(), originalParams)
+	log.Printf("Number of fields: %d", params.NumField())
+
+	// Iterate through fields and randomize
+	for i := 0; i < params.NumField(); i++ {
+		field := params.Field(i)
+		fieldType := params.Type().Field(i)
+
+		if !field.CanAddr() {
+			continue
+		}
+
+		fieldPtr := field.Addr().Interface()
+		if param, ok := fieldPtr.(Parameter); ok {
+			log.Printf("Before randomization - %s: %+v", fieldType.Name, fieldPtr)
+			param.Randomize()
+			log.Printf("After randomization - %s: %+v", fieldType.Name, fieldPtr)
+		}
+	}
+
+	m.targetPattern.UpdateParameters(params.Interface().(AdjustableParameters))
+	log.Printf("Successfully randomized parameters for pattern: %s", m.targetPattern.GetName())
 }
 
-// Add a method to handle transition completion
+// Update TransitionComplete to handle the pattern state updates
 func (m *RandomMode) TransitionComplete() {
+	fmt.Printf("Transition complete. Moving from %v to %v\n",
+		m.currentPattern.GetName(), m.targetPattern.GetName())
+	m.currentPattern = m.targetPattern
+	m.targetPattern = nil
 	m.inTransition = false
+	m.lastPatternSwitch = time.Now()
 }

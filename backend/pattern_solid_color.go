@@ -39,6 +39,7 @@ func (p *SolidColorPattern) GetName() string {
 
 type SolidColorUpdateRequest struct {
 	Parameters SolidColorParameters `json:"parameters"`
+	Transition *TransitionConfig    `json:"transition,omitempty"`
 }
 
 func (r *SolidColorUpdateRequest) GetParameters() AdjustableParameters {
@@ -49,4 +50,8 @@ func (p *SolidColorPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &SolidColorUpdateRequest{
 		Parameters: SolidColorParameters{},
 	}
+}
+
+func (p *SolidColorPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
 }

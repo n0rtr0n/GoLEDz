@@ -169,3 +169,7 @@ func isPointBetweenSpirals(p Point, params SpiralParams) bool {
 
 	return r >= innerR && r <= outerR
 }
+
+func (p *SpiralPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

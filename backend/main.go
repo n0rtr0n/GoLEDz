@@ -96,21 +96,43 @@ func main() {
 		defer close(universe)
 	}
 
-	patterns := registerPatterns(&pixelMap)
-	if len(patterns) == 0 {
-		log.Fatal("no patterns registered")
+	// Create a temporary initial pattern
+	tempPattern := &SolidColorPattern{
+		pixelMap: &pixelMap,
+		Parameters: SolidColorParameters{
+			Color: ColorParameter{
+				Value: Color{R: 0, G: 0, B: 0},
+			},
+		},
 	}
 
-	initialPattern := patterns["spiral"]
-
+	// Create controller with temp pattern
 	controller := NewPixelController(
 		universes,
 		errorTracker,
 		config.TargetFramesPerSecond,
-		initialPattern,
+		tempPattern,
 		&pixelMap,
+		config.TransitionDuration,
 	)
-	server := NewLEDServer(controller, &pixelMap, patterns)
+
+	// Now register patterns with controller
+	patterns := registerPatterns(&pixelMap, controller)
+	if len(patterns) == 0 {
+		log.Fatal("no patterns registered")
+	}
+
+	// Set the real initial pattern
+	controller.SetPattern(patterns["spiral"])
+
+	// Register modes
+	modes := registerModes(&pixelMap, patterns)
+
+	// Finally create server
+	server := NewLEDServer(controller, &pixelMap, patterns, modes, &ServerConfig{
+		TransitionDuration: config.TransitionDuration,
+		TransitionEnabled:  config.TransitionEnabled,
+	})
 
 	// start the web server first
 	address := fmt.Sprintf("%v:%v", config.HostAddress, config.HostPort)
@@ -130,4 +152,25 @@ func main() {
 
 	// cleanup
 	controller.Stop()
+}
+
+func registerModes(pixelMap *PixelMap, patterns map[string]Pattern) map[string]PatternMode {
+	modes := make(map[string]PatternMode)
+
+	randomMode := &RandomMode{
+		pixelMap: pixelMap,
+		patterns: patterns,
+		Label:    "Random",
+		Parameters: RandomParameters{
+			SwitchInterval: FloatParameter{
+				Min:   floatPointer(1.0),
+				Max:   60.0,
+				Value: 5.0,
+				Type:  "float",
+			},
+		},
+	}
+
+	modes[randomMode.GetName()] = randomMode
+	return modes
 }

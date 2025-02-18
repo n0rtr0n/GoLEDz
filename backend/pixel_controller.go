@@ -16,25 +16,38 @@ type PixelController struct {
 	running          bool
 	stopChan         chan struct{}
 	wg               sync.WaitGroup
+	currentMode      PatternMode
 	currentPattern   Pattern
 	patternMu        sync.RWMutex
 	onUpdate         func(*PixelMap)
 	pixelMap         *PixelMap
 	mu               sync.RWMutex
+	workingPixels    []Pixel
+	transition       *struct {
+		sourcePattern Pattern
+		targetPattern Pattern
+		startTime     time.Time
+		duration      time.Duration
+		sourcePixels  []Pixel
+		targetPixels  []Pixel
+	}
+	transitionMutex    sync.RWMutex
+	transitionDuration time.Duration
 }
 
-func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorTracker, fps int, initialPattern Pattern, pixelMap *PixelMap) *PixelController {
+func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorTracker, fps int, initialPattern Pattern, pixelMap *PixelMap, transitionDuration time.Duration) *PixelController {
 	if initialPattern == nil {
 		panic("initialPattern cannot be nil")
 	}
 
 	return &PixelController{
-		universes:      universes,
-		errorTracker:   errorTracker,
-		updateInterval: time.Second / time.Duration(fps),
-		stopChan:       make(chan struct{}),
-		currentPattern: initialPattern,
-		pixelMap:       pixelMap,
+		universes:          universes,
+		errorTracker:       errorTracker,
+		updateInterval:     time.Second / time.Duration(fps),
+		stopChan:           make(chan struct{}),
+		currentPattern:     initialPattern,
+		pixelMap:           pixelMap,
+		transitionDuration: transitionDuration,
 	}
 }
 
@@ -70,15 +83,17 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 
 // updateAllUniverses updates all universes with current pixel data
 func (pc *PixelController) updateAllUniverses() error {
-	pc.patternMu.RLock()
-	if pc.currentPattern != nil {
-		pc.currentPattern.Update()
-		if pc.onUpdate != nil {
-			pc.onUpdate(pc.pixelMap)
-		}
-	}
-	pc.patternMu.RUnlock()
+	pc.transitionMutex.RLock()
+	defer pc.transitionMutex.RUnlock()
 
+	// Let mode or pattern handle updates
+	pc.Update()
+
+	if pc.onUpdate != nil {
+		pc.onUpdate(pc.pixelMap)
+	}
+
+	// Send updated pixels to universes
 	for universe := range pc.universes {
 		data := pc.prepareUniverseData(universe)
 		pc.universes[universe] <- data
@@ -126,20 +141,29 @@ func (pc *PixelController) Stop() {
 	pc.running = false
 }
 
-func (pc *PixelController) SetPattern(pattern Pattern) {
-	pc.mu.Lock()
-	defer pc.mu.Unlock()
+func (pc *PixelController) SetPattern(pattern interface{}) error {
+	switch p := pattern.(type) {
+	case PatternMode:
+		if pc.currentMode != nil {
+			pc.currentMode.Stop()
+		}
+		pc.currentMode = p
+		p.SetController(pc)
+		if pattern := p.GetCurrentPattern(); pattern != nil {
+			pc.currentPattern = pattern
+		}
+		p.Start()
+		return nil
 
-	// If we're switching from random pattern, stop it
-	if randomPattern, ok := pc.currentPattern.(*RandomPattern); ok {
-		randomPattern.Stop()
-	}
+	case Pattern:
+		if pc.currentMode != nil {
+			pc.currentMode.Stop()
+			pc.currentMode = nil
+		}
+		return pc.transitionToPattern(p)
 
-	pc.currentPattern = pattern
-
-	// If we're switching to random pattern, start it
-	if randomPattern, ok := pattern.(*RandomPattern); ok {
-		randomPattern.Start()
+	default:
+		return fmt.Errorf("unknown pattern type: %T", pattern)
 	}
 }
 
@@ -147,4 +171,89 @@ func (pc *PixelController) SetUpdateCallback(callback func(*PixelMap)) {
 	pc.patternMu.Lock()
 	pc.onUpdate = callback
 	pc.patternMu.Unlock()
+}
+
+func (pc *PixelController) Update() {
+	pc.transitionMutex.RLock()
+	defer pc.transitionMutex.RUnlock()
+
+	// Handle transitions first (applies to both modes and normal patterns)
+	if pc.transition != nil {
+		elapsed := time.Since(pc.transition.startTime)
+		progress := float64(elapsed) / float64(pc.transition.duration)
+
+		// Use DefaultTransitionFromPattern for consistent transition behavior
+		DefaultTransitionFromPattern(
+			pc.transition.targetPattern,
+			pc.transition.sourcePattern,
+			progress,
+			pc.pixelMap,
+		)
+
+		if progress >= 1.0 {
+			pc.currentPattern = pc.transition.targetPattern
+			pc.transition = nil
+			if pc.currentMode != nil {
+				if mode, ok := pc.currentMode.(*RandomMode); ok {
+					mode.TransitionComplete()
+				}
+			}
+		}
+		return
+	}
+
+	// No transition in progress, do normal updates
+	if pc.currentMode != nil {
+		pc.currentMode.Update()
+	} else if pc.currentPattern != nil {
+		pc.currentPattern.Update()
+	}
+}
+
+func (pc *PixelController) SetTransitionDuration(duration time.Duration) {
+	pc.transitionMutex.Lock()
+	defer pc.transitionMutex.Unlock()
+
+	pc.transitionDuration = duration
+
+	// If there's an active transition, update its duration
+	if pc.transition != nil {
+		elapsed := time.Since(pc.transition.startTime)
+		progress := float64(elapsed) / float64(pc.transition.duration)
+		pc.transition.startTime = time.Now().Add(-time.Duration(float64(duration) * progress))
+		pc.transition.duration = duration
+	}
+}
+
+func (pc *PixelController) transitionToPattern(pattern Pattern) error {
+	pc.transitionMutex.Lock()
+	defer pc.transitionMutex.Unlock()
+
+	// Don't start a new transition if one is in progress
+	if pc.transition != nil {
+		return fmt.Errorf("transition already in progress")
+	}
+
+	// Create dedicated pixel maps for the transition
+	sourcePixels := make([]Pixel, len(*pc.pixelMap.pixels))
+	targetPixels := make([]Pixel, len(*pc.pixelMap.pixels))
+	copy(sourcePixels, *pc.pixelMap.pixels)
+	copy(targetPixels, *pc.pixelMap.pixels)
+
+	pc.transition = &struct {
+		sourcePattern Pattern
+		targetPattern Pattern
+		startTime     time.Time
+		duration      time.Duration
+		sourcePixels  []Pixel
+		targetPixels  []Pixel
+	}{
+		sourcePattern: pc.currentPattern,
+		targetPattern: pattern,
+		startTime:     time.Now(),
+		duration:      pc.transitionDuration,
+		sourcePixels:  sourcePixels,
+		targetPixels:  targetPixels,
+	}
+	return nil
 }

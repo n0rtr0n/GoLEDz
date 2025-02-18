@@ -98,3 +98,7 @@ func (p *ChaserPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 		Parameters: ChaserParameters{},
 	}
 }
+
+func (p *ChaserPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

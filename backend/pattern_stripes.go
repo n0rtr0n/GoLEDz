@@ -141,3 +141,7 @@ func (p *StripesPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 		Parameters: StripesParameters{},
 	}
 }
+
+func (p *StripesPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

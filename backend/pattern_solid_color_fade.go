@@ -64,3 +64,7 @@ func (p *SolidColorFadePattern) GetPatternUpdateRequest() PatternUpdateRequest {
 		Parameters: SolidColorFadeParameters{},
 	}
 }
+
+func (p *SolidColorFadePattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

@@ -6,26 +6,45 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 type LEDServer struct {
-	controller     *PixelController
-	patterns       map[string]Pattern
-	currentPattern Pattern
-	subscribers    []chan *PixelMap
-	mu             sync.RWMutex
-	pixelMap       *PixelMap
+	controller        *PixelController
+	patterns          map[string]Pattern
+	currentPattern    Pattern
+	subscribers       []chan *PixelMap
+	mu                sync.RWMutex
+	pixelMap          *PixelMap
+	defaultTransition TransitionConfig
+	modes             map[string]PatternMode
 }
 
-func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[string]Pattern) *LEDServer {
+type ServerConfig struct {
+	TransitionDuration time.Duration
+	TransitionEnabled  bool
+}
+
+func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[string]Pattern, modes map[string]PatternMode, config *ServerConfig) *LEDServer {
+	if config == nil {
+		config = &ServerConfig{
+			TransitionDuration: 2 * time.Second,
+			TransitionEnabled:  true,
+		}
+	}
 
 	server := &LEDServer{
 		controller:  controller,
 		pixelMap:    pixelMap,
 		patterns:    patterns,
+		modes:       modes,
 		subscribers: make([]chan *PixelMap, 0),
+		defaultTransition: TransitionConfig{
+			Duration: config.TransitionDuration,
+			Enabled:  config.TransitionEnabled,
+		},
 	}
 
 	if pattern, ok := patterns["spiral"]; ok {
@@ -53,6 +72,13 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 
 	// health check
 	mux.HandleFunc("GET /health", s.handleHealthCheck)
+
+	// Add transition config route
+	mux.HandleFunc("PUT /transition", s.handleUpdateTransition)
+
+	// Add mode management route
+	mux.HandleFunc("PUT /modes/{mode}", s.handleSetMode)
+	mux.HandleFunc("DELETE /modes/current", s.handleDisableMode)
 
 	return mux
 }
@@ -159,38 +185,92 @@ func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("handling pattern update request")
 	patternName := r.PathValue("pattern")
 
+	// Try patterns
 	pattern, exists := s.patterns[patternName]
 	if !exists {
-		s.mu.Unlock()
 		http.Error(w, "Pattern not found", http.StatusNotFound)
 		return
 	}
 
-	s.currentPattern = pattern
-
 	parameters := pattern.GetPatternUpdateRequest()
-
-	err := json.NewDecoder(r.Body).Decode(&parameters)
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = pattern.UpdateParameters(parameters.GetParameters())
-	if err != nil {
-		fmt.Println(err)
+	if err := pattern.UpdateParameters(parameters.GetParameters()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// update the pixel map with the new pattern
-	s.controller.SetPattern(pattern)
+	// Disable any active mode before setting pattern
+	if s.controller.currentMode != nil {
+		s.controller.currentMode.Stop()
+		s.controller.currentMode = nil
+	}
 
+	s.controller.SetPattern(pattern)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *LEDServer) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Healthy")
+}
+
+func (s *LEDServer) handleUpdateTransition(w http.ResponseWriter, r *http.Request) {
+	var configReq TransitionConfigRequest
+	if err := json.NewDecoder(r.Body).Decode(&configReq); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	duration := time.Duration(configReq.Duration) * time.Millisecond
+
+	s.defaultTransition = TransitionConfig{
+		Duration: duration,
+		Enabled:  configReq.Enabled,
+	}
+
+	// Update controller's transition duration
+	s.controller.SetTransitionDuration(duration)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// New handler for enabling modes
+func (s *LEDServer) handleSetMode(w http.ResponseWriter, r *http.Request) {
+	modeName := r.PathValue("mode")
+
+	mode, exists := s.modes[modeName]
+	if !exists {
+		http.Error(w, "Mode not found", http.StatusNotFound)
+		return
+	}
+
+	// Only try to decode parameters if there's a request body
+	if r.ContentLength > 0 {
+		parameters := mode.GetPatternUpdateRequest()
+		if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := mode.UpdateParameters(parameters.GetParameters()); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	s.controller.SetPattern(mode)
+	w.WriteHeader(http.StatusOK)
+}
+
+// New handler for disabling current mode
+func (s *LEDServer) handleDisableMode(w http.ResponseWriter, r *http.Request) {
+	if s.controller.currentMode != nil {
+		s.controller.currentMode.Stop()
+		s.controller.currentMode = nil
+	}
+	w.WriteHeader(http.StatusOK)
 }

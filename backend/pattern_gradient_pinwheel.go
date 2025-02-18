@@ -92,3 +92,7 @@ func (p *GradientPinwheelPattern) GetPatternUpdateRequest() PatternUpdateRequest
 		Parameters: GradientPinwheelParameters{},
 	}
 }
+
+func (p *GradientPinwheelPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

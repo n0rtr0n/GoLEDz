@@ -21,4 +21,5 @@ type Pattern interface {
 	GetName() string
 	UpdateParameters(AdjustableParameters) error
 	GetPatternUpdateRequest() PatternUpdateRequest
+	TransitionFrom(source Pattern, progress float64)
 }

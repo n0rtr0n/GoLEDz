@@ -50,3 +50,7 @@ func (p *LightsOffPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 		Parameters: struct{}{},
 	}
 }
+
+func (p *LightsOffPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

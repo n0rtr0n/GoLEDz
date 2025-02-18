@@ -67,3 +67,7 @@ func (p *RainbowPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 		Parameters: RainbowParameters{},
 	}
 }
+
+func (p *RainbowPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

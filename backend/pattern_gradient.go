@@ -123,3 +123,7 @@ func projectPoint(p Point, dir struct{ X, Y float64 }) float64 {
 	fx, fy := float64(p.X), float64(p.Y)
 	return fx*dir.X + fy*dir.Y
 }
+
+func (p *GradientPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

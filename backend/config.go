@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -15,6 +16,8 @@ type Config struct {
 	HostPort              string
 	ControllerAddress     string
 	TargetFramesPerSecond int
+	TransitionDuration    time.Duration
+	TransitionEnabled     bool
 }
 
 func loadConfig() *Config {
@@ -42,11 +45,23 @@ func loadConfig() *Config {
 		log.Fatalf("maximum targetFramesPerSecond value %v exceeded, got %v", MAX_FRAMES_PER_SECOND, targetFramesPerSecond)
 	}
 
+	transitionDurationMs, err := strconv.Atoi(getRequiredParameter("TRANSITION_DURATION_MS"))
+	if err != nil {
+		log.Fatalf("invalid value for TRANSITION_DURATION_MS")
+	}
+
+	transitionEnabled, err := strconv.ParseBool(getRequiredParameter("TRANSITION_ENABLED"))
+	if err != nil {
+		log.Fatalf("invalid value for TRANSITION_ENABLED")
+	}
+
 	return &Config{
 		HostAddress:           getRequiredParameter("HOST_ADDRESS"),
 		HostPort:              getRequiredParameter("HOST_PORT"),
 		ControllerAddress:     getRequiredParameter("CONTROLLER_ADDRESS"),
 		TargetFramesPerSecond: targetFramesPerSecond,
+		TransitionDuration:    time.Duration(transitionDurationMs) * time.Millisecond,
+		TransitionEnabled:     transitionEnabled,
 	}
 }
 

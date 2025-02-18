@@ -62,3 +62,7 @@ func (p *PulsePattern) GetPatternUpdateRequest() PatternUpdateRequest {
 		Parameters: PulseParameters{},
 	}
 }
+
+func (p *PulsePattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

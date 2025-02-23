@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"math/rand"
 )
 
 func buildPixelGrid() *[]Pixel {
@@ -122,6 +123,11 @@ func rotate(x int16, y int16, rotationDegrees int16) (int16, int16) {
 
 func degreesToRadians(degrees float64) float64 {
 	return degrees * math.Pi / 180
+}
+
+// chance of returning true
+func randomChancePercent(chance float64) bool {
+	return (rand.Float64() * 100.0) <= chance
 }
 
 // helper function to return address of float value

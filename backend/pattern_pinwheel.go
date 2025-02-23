@@ -8,16 +8,16 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-type GradientPinwheelPattern struct {
+type PinwheelPattern struct {
 	pixelMap          *PixelMap
 	currentSaturation float64
 	currentHue        float64
-	Parameters        GradientPinwheelParameters `json:"parameters"`
-	Label             string                     `json:"label,omitempty"`
+	Parameters        PinwheelParameters `json:"parameters"`
+	Label             string             `json:"label,omitempty"`
 }
 
-func (p *GradientPinwheelPattern) UpdateParameters(parameters AdjustableParameters) error {
-	newParams, ok := parameters.(GradientPinwheelParameters)
+func (p *PinwheelPattern) UpdateParameters(parameters AdjustableParameters) error {
+	newParams, ok := parameters.(PinwheelParameters)
 	if !ok {
 		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
 		return errors.New(err)
@@ -33,7 +33,7 @@ func (p *GradientPinwheelPattern) UpdateParameters(parameters AdjustableParamete
 
 //{"parameters": {"speed": {"value": 1.0},"divisions":{"value": 4},"reversed": {"value": false},"hue": {"value": 120.0}}}
 
-type GradientPinwheelParameters struct {
+type PinwheelParameters struct {
 	Speed     FloatParameter   `json:"speed"`
 	Divisions IntParameter     `json:"divisions"`
 	Reversed  BooleanParameter `json:"reversed"`
@@ -41,7 +41,7 @@ type GradientPinwheelParameters struct {
 	Rainbow   BooleanParameter `json:"rainbow"`
 }
 
-func (p *GradientPinwheelPattern) Update() {
+func (p *PinwheelPattern) Update() {
 	speed := p.Parameters.Speed.Value
 	divisions := p.Parameters.Divisions.Value
 	reversed := p.Parameters.Reversed.Value
@@ -96,24 +96,24 @@ func (p *GradientPinwheelPattern) Update() {
 	p.currentSaturation = math.Mod(sat, MAX_SATURATION)
 }
 
-func (p *GradientPinwheelPattern) GetName() string {
-	return "gradientPinwheel"
+func (p *PinwheelPattern) GetName() string {
+	return "pinwheel"
 }
 
-type GradientPinwheelUpdateRequest struct {
-	Parameters GradientPinwheelParameters `json:"parameters"`
+type PinwheelUpdateRequest struct {
+	Parameters PinwheelParameters `json:"parameters"`
 }
 
-func (r *GradientPinwheelUpdateRequest) GetParameters() AdjustableParameters {
+func (r *PinwheelUpdateRequest) GetParameters() AdjustableParameters {
 	return r.Parameters
 }
 
-func (p *GradientPinwheelPattern) GetPatternUpdateRequest() PatternUpdateRequest {
-	return &GradientPinwheelUpdateRequest{
-		Parameters: GradientPinwheelParameters{},
+func (p *PinwheelPattern) GetPatternUpdateRequest() PatternUpdateRequest {
+	return &PinwheelUpdateRequest{
+		Parameters: PinwheelParameters{},
 	}
 }
 
-func (p *GradientPinwheelPattern) TransitionFrom(source Pattern, progress float64) {
+func (p *PinwheelPattern) TransitionFrom(source Pattern, progress float64) {
 	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
 }

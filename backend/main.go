@@ -17,7 +17,7 @@ func main() {
 	config = loadConfig()
 
 	// websocket connections. will no longer block if we're not connected to a websocket
-	// var subscribers []chan *PixelMa
+	// var subscribers []chan *PixelMap
 	ch := make(chan *PixelMap)
 	defer close(ch)
 

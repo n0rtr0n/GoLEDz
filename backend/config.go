@@ -12,9 +12,10 @@ import (
 const MAX_FRAMES_PER_SECOND = 120
 
 type Config struct {
+	ControllerAddress     string
 	HostAddress           string
 	HostPort              string
-	ControllerAddress     string
+	LocalOnly             bool
 	TargetFramesPerSecond int
 	TransitionDuration    time.Duration
 	TransitionEnabled     bool
@@ -34,6 +35,11 @@ func loadConfig() *Config {
 	err := godotenv.Load(envPrefix + `.env`)
 	if err != nil {
 		log.Fatalf("Error loading .env file")
+	}
+
+	localOnly, err := strconv.ParseBool(getRequiredParameter("LOCAL_ONLY"))
+	if err != nil {
+		log.Fatalf("invalid value for LOCAL_ONLY")
 	}
 
 	targetFramesPerSecondString := getRequiredParameter("TARGET_FRAMES_PER_SECOND")
@@ -59,6 +65,7 @@ func loadConfig() *Config {
 		HostAddress:           getRequiredParameter("HOST_ADDRESS"),
 		HostPort:              getRequiredParameter("HOST_PORT"),
 		ControllerAddress:     getRequiredParameter("CONTROLLER_ADDRESS"),
+		LocalOnly:             localOnly,
 		TargetFramesPerSecond: targetFramesPerSecond,
 		TransitionDuration:    time.Duration(transitionDurationMs) * time.Millisecond,
 		TransitionEnabled:     transitionEnabled,

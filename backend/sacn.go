@@ -214,6 +214,10 @@ func (t *Transmitter) sendToDestinations(universe *Universe) {
 	universe.sequence++
 
 	for _, dest := range universe.destinations {
+		if config.LocalOnly {
+			continue
+		}
+
 		if _, err := t.conn.WriteToUDP(packet, dest.Addr); err != nil {
 			log.Printf("Error sending to universe %d: %v", universe.number, err)
 			continue

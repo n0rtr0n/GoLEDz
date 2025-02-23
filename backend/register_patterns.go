@@ -1,5 +1,10 @@
 package main
 
+const TYPE_FLOAT = "float"
+const TYPE_INT = "int"
+const TYPE_COLOR = "color"
+const TYPE_BOOL = "bool"
+
 func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[string]Pattern {
 	patterns := make(map[string]Pattern)
 
@@ -10,17 +15,17 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 				Min:   floatPointer(0.1),
 				Max:   20.0,
 				Value: 6.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Size: FloatParameter{
 				Min:   floatPointer(0.1),
 				Max:   1.0,
 				Value: 0.5,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Reversed: BooleanParameter{
 				Value: true,
-				Type:  "bool",
+				Type:  TYPE_BOOL,
 			},
 		},
 		currentHue: 0.0,
@@ -33,17 +38,17 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 				Min:   floatPointer(0.1),
 				Max:   25.0,
 				Value: 6.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Size: FloatParameter{
 				Min:   floatPointer(0.1),
 				Max:   100.0,
 				Value: 0.5,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Reversed: BooleanParameter{
 				Value: true,
-				Type:  "bool",
+				Type:  TYPE_BOOL,
 			},
 		},
 		currentHue: 0.0,
@@ -56,44 +61,54 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 				Min:   floatPointer(0.1),
 				Max:   25.0,
 				Value: 6.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Size: FloatParameter{
 				Min:   floatPointer(0.1),
 				Max:   100.0,
 				Value: 0.5,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Reversed: BooleanParameter{
 				Value: true,
-				Type:  "bool",
+				Type:  TYPE_BOOL,
 			},
 		},
 		currentHue: 0.0,
 		Label:      "Rainbow Pinwheel",
 	}
-	gradientPinwheelPattern := GradientPinwheelPattern{
+	pinwheelPattern := PinwheelPattern{
 		pixelMap: pixelMap,
-		Parameters: GradientPinwheelParameters{
+		Parameters: PinwheelParameters{
 			Speed: FloatParameter{
 				Min:   floatPointer(0.001),
 				Max:   0.1,
 				Value: 0.02,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Divisions: IntParameter{
 				Min:   intPointer(1),
 				Max:   15,
 				Value: 4,
-				Type:  "int",
+				Type:  TYPE_INT,
 			},
 			Reversed: BooleanParameter{
 				Value: true,
-				Type:  "bool",
+				Type:  TYPE_BOOL,
+			},
+			Hue: FloatParameter{
+				Min:   floatPointer(0),
+				Max:   360.0,
+				Value: 120.0,
+				Type:  TYPE_FLOAT,
+			},
+			Rainbow: BooleanParameter{
+				Value: false,
+				Type:  TYPE_BOOL,
 			},
 		},
 		currentSaturation: 0.0,
-		Label:             "Gradient Pinwheel",
+		Label:             "Pinwheel",
 	}
 	gradientPattern := GradientPattern{
 		pixelMap: pixelMap,
@@ -104,7 +119,7 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 0,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Color2: ColorParameter{
 				Value: Color{
@@ -112,17 +127,17 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 255,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Speed: FloatParameter{
 				Min:   floatPointer(0.0),
 				Max:   20.0,
 				Value: 1.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Reversed: BooleanParameter{
 				Value: false,
-				Type:  "bool",
+				Type:  TYPE_BOOL,
 			},
 		},
 		Label: "Gradient",
@@ -136,7 +151,7 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 0,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 		},
 		Label: "Solid Color",
@@ -155,16 +170,30 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 0,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
 				Max:   20.0,
 				Value: 1.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 		},
 		Label: "Pulse",
+	}
+	sparklePattern := SparklePattern{
+		pixelMap: pixelMap,
+		Parameters: SparkleParameters{
+			Color: ColorParameter{
+				Value: Color{
+					R: 255,
+					G: 0,
+					B: 0,
+				},
+				Type: TYPE_COLOR,
+			},
+		},
+		Label: "Sparkle",
 	}
 	spiralPattern := SpiralPattern{
 		pixelMap: pixelMap,
@@ -175,7 +204,7 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 0,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Color2: ColorParameter{
 				Value: Color{
@@ -183,25 +212,25 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 255,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Speed: FloatParameter{
 				Min:   floatPointer(1.0),
 				Max:   20.0,
 				Value: 8.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			MaxTurns: IntParameter{
 				Min:   intPointer(1),
 				Max:   12,
 				Value: 4,
-				Type:  "int",
+				Type:  TYPE_INT,
 			},
 			Width: FloatParameter{
 				Min:   floatPointer(10.0),
 				Max:   40.0,
 				Value: 30.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 		},
 		Label: "Spiral",
@@ -213,13 +242,13 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 				Min:   floatPointer(0.1),
 				Max:   10.0,
 				Value: 1.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Brightness: FloatParameter{
 				Min:   floatPointer(1),
 				Max:   100,
 				Value: 100,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 		},
 		Label: "Rainbow",
@@ -233,13 +262,13 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 0,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
 				Max:   50.0,
 				Value: 1.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 		},
 		Label: "Solid Color Fade",
@@ -251,13 +280,13 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 				Min:   floatPointer(0.1),
 				Max:   100.0,
 				Value: 10.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Size: FloatParameter{
 				Min:   floatPointer(1.0),
 				Max:   100.0,
 				Value: 30.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Color: ColorParameter{
 				Value: Color{
@@ -265,19 +294,19 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 0,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Rotation: FloatParameter{
 				Min:   floatPointer(0.0),
 				Max:   360.0,
 				Value: 0.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Stripes: IntParameter{
 				Min:   intPointer(0),
 				Max:   10,
 				Value: 1,
-				Type:  "int",
+				Type:  TYPE_INT,
 			},
 		},
 		Label: "Stripes",
@@ -290,19 +319,19 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 				Min:   floatPointer(0.1),
 				Max:   5.0,
 				Value: 1.0,
-				Type:  "float",
+				Type:  TYPE_FLOAT,
 			},
 			Size: IntParameter{
 				Min:   intPointer(1),
 				Max:   100,
 				Value: 10,
-				Type:  "int",
+				Type:  TYPE_INT,
 			},
 			Spacing: IntParameter{
 				Min:   intPointer(1),
 				Max:   100,
 				Value: 10,
-				Type:  "int",
+				Type:  TYPE_INT,
 			},
 			Color: ColorParameter{
 				Value: Color{
@@ -310,15 +339,15 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 					G: 0,
 					B: 0,
 				},
-				Type: "color",
+				Type: TYPE_COLOR,
 			},
 			Reversed: BooleanParameter{
 				Value: false,
-				Type:  "bool",
+				Type:  TYPE_BOOL,
 			},
 			Rainbow: BooleanParameter{
 				Value: false,
-				Type:  "bool",
+				Type:  TYPE_BOOL,
 			},
 		},
 		Label: "Chaser",
@@ -326,7 +355,7 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 
 	patterns[rainbowCirclePattern.GetName()] = &rainbowCirclePattern
 	patterns[rainbowPinwheelPattern.GetName()] = &rainbowPinwheelPattern
-	patterns[gradientPinwheelPattern.GetName()] = &gradientPinwheelPattern
+	patterns[pinwheelPattern.GetName()] = &pinwheelPattern
 	patterns[gradientPattern.GetName()] = &gradientPattern
 	patterns[rainbowDiagonalPattern.GetName()] = &rainbowDiagonalPattern
 	patterns[rainbowPattern.GetName()] = &rainbowPattern
@@ -337,6 +366,7 @@ func registerPatterns(pixelMap *PixelMap, controller *PixelController) map[strin
 	patterns[chaserPattern.GetName()] = &chaserPattern
 	patterns[pulsePattern.GetName()] = &pulsePattern
 	patterns[spiralPattern.GetName()] = &spiralPattern
+	patterns[sparklePattern.GetName()] = &sparklePattern
 
 	return patterns
 }

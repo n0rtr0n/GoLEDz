@@ -7,6 +7,7 @@ import (
 )
 
 type SpiralPattern struct {
+	BasePattern
 	pixelMap        *PixelMap
 	currentRotation float64
 	Parameters      SpiralParameters `json:"parameters"`
@@ -54,7 +55,11 @@ func (p *SpiralPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 		point := Point{pixel.x, pixel.y}
 		if isPointBetweenSpirals(point, params) {
-			(*p.pixelMap.pixels)[i].color = color1
+			if p.GetColorMask() != nil {
+				(*p.pixelMap.pixels)[i].color = p.GetColorMask().GetColorAt(point)
+			} else {
+				(*p.pixelMap.pixels)[i].color = color1
+			}
 		} else {
 			(*p.pixelMap.pixels)[i].color = color2
 		}
@@ -78,7 +83,7 @@ func (r *SpiralUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *SpiralPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &SpiralUpdateRequest{
-		Parameters: SpiralParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

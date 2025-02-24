@@ -29,11 +29,11 @@ type Sparkle struct {
 }
 
 type SparklePattern struct {
-	pixelMap        *PixelMap
-	currentRotation float64
-	sparkles        []*Sparkle
-	Parameters      SparkleParameters `json:"parameters"`
-	Label           string            `json:"label,omitempty"`
+	BasePattern
+	pixelMap   *PixelMap
+	sparkles   []*Sparkle
+	Parameters SparkleParameters `json:"parameters"`
+	Label      string            `json:"label,omitempty"`
 }
 
 func (p *SparklePattern) UpdateParameters(parameters AdjustableParameters) error {
@@ -99,7 +99,11 @@ func (p *SparklePattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 		point := Point{pixel.x, pixel.y}
 		if pointIsBetweenAnySparkle(point, p.sparkles) {
-			(*p.pixelMap.pixels)[i].color = color
+			if p.GetColorMask() != nil {
+				(*p.pixelMap.pixels)[i].color = p.GetColorMask().GetColorAt(point)
+			} else {
+				(*p.pixelMap.pixels)[i].color = color
+			}
 		} else {
 			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
 		}
@@ -120,7 +124,7 @@ func (r *SparkleUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *SparklePattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &SparkleUpdateRequest{
-		Parameters: SparkleParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

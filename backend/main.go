@@ -96,16 +96,9 @@ func main() {
 		defer close(universe)
 	}
 
-	// create a temporary initial pattern
-	// TODO: refactor this. it's kinda weird that we have to
-	// create a fake pattern just to initialize the controller
-	tempPattern := &SolidColorPattern{
-		pixelMap: &pixelMap,
-		Parameters: SolidColorParameters{
-			Color: ColorParameter{
-				Value: Color{R: 0, G: 0, B: 0},
-			},
-		},
+	patterns := registerPatterns(&pixelMap)
+	if len(patterns) == 0 {
+		log.Fatal("no patterns registered")
 	}
 
 	// create controller with temp pattern
@@ -113,16 +106,12 @@ func main() {
 		universes,
 		errorTracker,
 		config.TargetFramesPerSecond,
-		tempPattern,
+		patterns["solidColor"], // temporary initial pattern
 		&pixelMap,
 		config.TransitionDuration,
 	)
 
 	// now register patterns with controller
-	patterns := registerPatterns(&pixelMap, controller)
-	if len(patterns) == 0 {
-		log.Fatal("no patterns registered")
-	}
 
 	// set the real initial pattern
 	controller.SetPattern(patterns["spiral"])
@@ -166,7 +155,7 @@ func registerModes(pixelMap *PixelMap, patterns map[string]Pattern) map[string]P
 			SwitchInterval: FloatParameter{
 				Min:   floatPointer(1.0),
 				Max:   60.0,
-				Value: 5.0,
+				Value: 15.0,
 				Type:  "float",
 			},
 		},

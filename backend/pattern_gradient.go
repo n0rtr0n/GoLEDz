@@ -7,6 +7,7 @@ import (
 )
 
 type GradientPattern struct {
+	BasePattern
 	pixelMap     *PixelMap
 	Parameters   GradientParameters `json:"parameters"`
 	Label        string             `json:"label,omitempty"`
@@ -66,7 +67,7 @@ func (r *GradientUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *GradientPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &GradientUpdateRequest{
-		Parameters: GradientParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

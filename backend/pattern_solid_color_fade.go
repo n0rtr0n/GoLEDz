@@ -9,6 +9,7 @@ import (
 )
 
 type SolidColorFadePattern struct {
+	BasePattern
 	pixelMap   *PixelMap
 	currentHue float64
 	Parameters SolidColorFadeParameters `json:"parameters"`
@@ -61,7 +62,7 @@ func (r *SolidColorFadeUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *SolidColorFadePattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &SolidColorFadeUpdateRequest{
-		Parameters: SolidColorFadeParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

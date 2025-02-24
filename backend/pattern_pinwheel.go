@@ -9,6 +9,7 @@ import (
 )
 
 type PinwheelPattern struct {
+	BasePattern
 	pixelMap          *PixelMap
 	currentSaturation float64
 	currentHue        float64
@@ -110,7 +111,7 @@ func (r *PinwheelUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *PinwheelPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &PinwheelUpdateRequest{
-		Parameters: PinwheelParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

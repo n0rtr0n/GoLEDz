@@ -6,15 +6,16 @@ import (
 )
 
 type LightsOffPattern struct {
+	BasePattern
 	pixelMap   *PixelMap
-	Label      string              `json:"label,omitempty"`
 	Parameters LightsOffParameters `json:"parameters"`
+	Label      string              `json:"label,omitempty"`
 }
 
 type LightsOffParameters struct{}
 
 func (p *LightsOffPattern) UpdateParameters(parameters AdjustableParameters) error {
-	_, ok := parameters.(struct{})
+	_, ok := parameters.(LightsOffParameters)
 	if !ok {
 		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
 		return errors.New(err)
@@ -38,7 +39,7 @@ func (p *LightsOffPattern) GetName() string {
 }
 
 type LightsOffUpdateRequest struct {
-	Parameters struct{} `json:"parameters"`
+	Parameters LightsOffParameters `json:"parameters"`
 }
 
 func (r *LightsOffUpdateRequest) GetParameters() AdjustableParameters {
@@ -47,7 +48,7 @@ func (r *LightsOffUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *LightsOffPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &LightsOffUpdateRequest{
-		Parameters: struct{}{},
+		Parameters: p.Parameters,
 	}
 }
 

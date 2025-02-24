@@ -9,6 +9,7 @@ import (
 )
 
 type ChaserPattern struct {
+	BasePattern
 	pixelMap        *PixelMap
 	currentPosition float64
 	currentHue      float64
@@ -95,7 +96,7 @@ func (r *ChaserUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *ChaserPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &ChaserUpdateRequest{
-		Parameters: ChaserParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

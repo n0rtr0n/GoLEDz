@@ -10,6 +10,7 @@ import (
 // PixelController manages the updating and display of pixels across universes
 type PixelController struct {
 	universes        map[uint16]chan<- []byte
+	patterns         map[string]Pattern
 	errorTracker     *ErrorTracker
 	pixelsByUniverse map[uint16][]*Pixel
 	updateInterval   time.Duration
@@ -32,6 +33,50 @@ type PixelController struct {
 	transitionMutex    sync.RWMutex
 	transitionDuration time.Duration
 	patternChange      chan Pattern
+	currentColorMask   ColorMaskPattern
+	colorMaskChange    chan ColorMaskPattern
+	isParameterUpdate  bool
+}
+
+func getDefaultColorMask() ColorMaskPattern {
+	// return &GradientColorMask{
+	// 	Parameters: GradientParameters{
+	// 		Color1: ColorParameter{
+	// 			Value: Color{R: 255, G: 0, B: 0},
+	// 			Type:  TYPE_COLOR,
+	// 		},
+	// 		Color2: ColorParameter{
+	// 			Value: Color{R: 0, G: 0, B: 255},
+	// 			Type:  TYPE_COLOR,
+	// 		},
+	// 		Speed: FloatParameter{
+	// 			Min:   floatPointer(0.0),
+	// 			Max:   20.0,
+	// 			Value: 1.0,
+	// 			Type:  TYPE_FLOAT,
+	// 		},
+	// 		Reversed: BooleanParameter{
+	// 			Value: false,
+	// 			Type:  TYPE_BOOL,
+	// 		},
+	// 	},
+	// 	Label: "Gradient",
+	// }
+	return &RainbowCircleMask{
+		Parameters: RainbowCircleParameters{
+			Speed: FloatParameter{
+				Min:   floatPointer(0.1),
+				Max:   25.0,
+				Value: 6.0,
+				Type:  TYPE_FLOAT,
+			},
+			Reversed: BooleanParameter{
+				Value: true,
+				Type:  TYPE_BOOL,
+			},
+		},
+		Label: "Rainbow Circle",
+	}
 }
 
 func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorTracker, fps int, initialPattern Pattern, pixelMap *PixelMap, transitionDuration time.Duration) *PixelController {
@@ -39,7 +84,7 @@ func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorT
 		panic("initialPattern cannot be nil")
 	}
 
-	return &PixelController{
+	controller := &PixelController{
 		universes:          universes,
 		errorTracker:       errorTracker,
 		updateInterval:     time.Second / time.Duration(fps),
@@ -47,8 +92,13 @@ func NewPixelController(universes map[uint16]chan<- []byte, errorTracker *ErrorT
 		currentPattern:     initialPattern,
 		pixelMap:           pixelMap,
 		transitionDuration: transitionDuration,
-		patternChange:      make(chan Pattern, 1), // Buffer of 1 to prevent blocking
+		patternChange:      make(chan Pattern, 1),
+		colorMaskChange:    make(chan ColorMaskPattern, 1),
+		currentColorMask:   getDefaultColorMask(),
 	}
+
+	controller.patterns = registerPatterns(pixelMap)
+	return controller
 }
 
 // we're currently using the paradigm of DMX over ethernet, so we think about the world
@@ -155,6 +205,18 @@ func (pc *PixelController) SetPattern(pattern interface{}) error {
 		return nil
 
 	case Pattern:
+		if pc.isParameterUpdate {
+			// Set color mask before updating pattern
+			if pc.currentColorMask != nil {
+				p.SetColorMask(pc.currentColorMask)
+			}
+			pc.currentPattern = p
+			return nil
+		}
+		// Set color mask before sending to pattern change channel
+		if pc.currentColorMask != nil {
+			p.SetColorMask(pc.currentColorMask)
+		}
 		select {
 		case pc.patternChange <- p:
 			return nil
@@ -173,10 +235,39 @@ func (pc *PixelController) SetUpdateCallback(callback func(*PixelMap)) {
 	pc.patternMu.Unlock()
 }
 
+func (pc *PixelController) SetColorMask(mask ColorMaskPattern) error {
+	select {
+	case pc.colorMaskChange <- mask:
+		return nil
+	default:
+		return fmt.Errorf("color mask change channel full, try again later")
+	}
+}
+
 func (pc *PixelController) Update() {
+	// Handle color mask changes
+	select {
+	case newMask := <-pc.colorMaskChange:
+		pc.currentColorMask = newMask
+	default:
+		// no color mask change pending
+	}
+
+	// Update color mask if it exists
+	if pc.currentColorMask != nil {
+		pc.currentColorMask.Update()
+		if pc.currentPattern != nil {
+			pc.currentPattern.SetColorMask(pc.currentColorMask)
+		}
+	}
+
 	select {
 	case newPattern := <-pc.patternChange:
-		// reate transition pixels
+		// Don't create transition if we're just updating parameters
+		if pc.isParameterUpdate {
+			break
+		}
+		// Create transition pixels
 		sourcePixels := make([]Pixel, len(*pc.pixelMap.pixels))
 		targetPixels := make([]Pixel, len(*pc.pixelMap.pixels))
 		copy(sourcePixels, *pc.pixelMap.pixels)
@@ -202,7 +293,7 @@ func (pc *PixelController) Update() {
 	}
 
 	// handle active transition
-	if pc.transition != nil {
+	if pc.transition != nil && !pc.isParameterUpdate {
 		elapsed := time.Since(pc.transition.startTime)
 		progress := float64(elapsed) / float64(pc.transition.duration)
 
@@ -246,4 +337,24 @@ func (pc *PixelController) SetTransitionDuration(duration time.Duration) {
 		pc.transition.startTime = time.Now().Add(-time.Duration(float64(duration) * progress))
 		pc.transition.duration = duration
 	}
+}
+
+func (c *PixelController) UpdatePattern(patternName string, request PatternUpdateRequest) error {
+	pattern, exists := c.patterns[patternName]
+	if !exists {
+		return fmt.Errorf("pattern %s not found", patternName)
+	}
+
+	// If updating same pattern, just update parameters directly
+	if c.currentPattern != nil && c.currentPattern.GetName() == patternName {
+		c.isParameterUpdate = true
+		defer func() { c.isParameterUpdate = false }()
+		return c.currentPattern.UpdateParameters(request.GetParameters())
+	}
+
+	// For different patterns, do the normal transition
+	if err := pattern.UpdateParameters(request.GetParameters()); err != nil {
+		return err
+	}
+	return c.SetPattern(pattern)
 }

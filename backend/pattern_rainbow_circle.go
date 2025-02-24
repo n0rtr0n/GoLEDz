@@ -9,6 +9,7 @@ import (
 )
 
 type RainbowCirclePattern struct {
+	BasePattern
 	pixelMap   *PixelMap
 	currentHue float64
 	Parameters RainbowCircleParameters `json:"parameters"`
@@ -77,7 +78,7 @@ func (r *RainbowCircleUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *RainbowCirclePattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &RainbowCircleUpdateRequest{
-		Parameters: RainbowCircleParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

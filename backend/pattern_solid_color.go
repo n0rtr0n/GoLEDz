@@ -6,9 +6,14 @@ import (
 )
 
 type SolidColorPattern struct {
+	BasePattern
 	pixelMap   *PixelMap
 	Parameters SolidColorParameters `json:"parameters"`
-	Label      string               `json:"label,omitempty"`
+	Label      string
+}
+
+type SolidColorParameters struct {
+	Color ColorParameter `json:"color"`
 }
 
 func (p *SolidColorPattern) UpdateParameters(parameters AdjustableParameters) error {
@@ -17,13 +22,8 @@ func (p *SolidColorPattern) UpdateParameters(parameters AdjustableParameters) er
 		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
 		return errors.New(err)
 	}
-
 	p.Parameters.Color.Update(newParams.Color.Value)
 	return nil
-}
-
-type SolidColorParameters struct {
-	Color ColorParameter `json:"color"`
 }
 
 func (p *SolidColorPattern) Update() {
@@ -37,21 +37,20 @@ func (p *SolidColorPattern) GetName() string {
 	return "solidColor"
 }
 
-type SolidColorUpdateRequest struct {
-	Parameters SolidColorParameters `json:"parameters"`
-	Transition *TransitionConfig    `json:"transition,omitempty"`
-}
-
-func (r *SolidColorUpdateRequest) GetParameters() AdjustableParameters {
-	return r.Parameters
-}
-
 func (p *SolidColorPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &SolidColorUpdateRequest{
-		Parameters: SolidColorParameters{},
+		Parameters: p.Parameters,
 	}
 }
 
 func (p *SolidColorPattern) TransitionFrom(source Pattern, progress float64) {
 	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}
+
+type SolidColorUpdateRequest struct {
+	Parameters SolidColorParameters `json:"parameters"`
+}
+
+func (r *SolidColorUpdateRequest) GetParameters() AdjustableParameters {
+	return r.Parameters
 }

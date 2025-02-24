@@ -19,7 +19,28 @@ type PatternUpdateRequest interface {
 type Pattern interface {
 	Update()
 	GetName() string
+	GetLabel() string
 	UpdateParameters(AdjustableParameters) error
 	GetPatternUpdateRequest() PatternUpdateRequest
 	TransitionFrom(source Pattern, progress float64)
+	SetColorMask(mask ColorMaskPattern)
+	GetColorMask() ColorMaskPattern
+}
+
+// BasePattern provides common functionality for all patterns
+type BasePattern struct {
+	colorMask ColorMaskPattern
+	Label     string `json:"label,omitempty"`
+}
+
+func (p *BasePattern) SetColorMask(mask ColorMaskPattern) {
+	p.colorMask = mask
+}
+
+func (p *BasePattern) GetColorMask() ColorMaskPattern {
+	return p.colorMask
+}
+
+func (p *BasePattern) GetLabel() string {
+	return p.Label
 }

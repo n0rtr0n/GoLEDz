@@ -20,11 +20,27 @@ type LEDServer struct {
 	pixelMap          *PixelMap
 	defaultTransition TransitionConfig
 	modes             map[string]PatternMode
+	colorMasks        map[string]ColorMaskPattern
 }
 
 type ServerConfig struct {
 	TransitionDuration time.Duration
 	TransitionEnabled  bool
+}
+
+type PatternsResponse struct {
+	Patterns   map[string]PatternInfo   `json:"patterns"`
+	ColorMasks map[string]ColorMaskInfo `json:"colorMasks"`
+}
+
+type ColorMaskInfo struct {
+	Label      string               `json:"label"`
+	Parameters AdjustableParameters `json:"parameters"`
+}
+
+type PatternInfo struct {
+	Label      string               `json:"label"`
+	Parameters AdjustableParameters `json:"parameters"`
 }
 
 func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[string]Pattern, modes map[string]PatternMode, config *ServerConfig) *LEDServer {
@@ -40,6 +56,7 @@ func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[
 		pixelMap:    pixelMap,
 		patterns:    patterns,
 		modes:       modes,
+		colorMasks:  registerColorMasks(),
 		subscribers: make([]chan *PixelMap, 0),
 		defaultTransition: TransitionConfig{
 			Duration: config.TransitionDuration,
@@ -79,6 +96,10 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 	// mode management
 	mux.HandleFunc("PUT /modes/{mode}", s.handleSetMode)
 	mux.HandleFunc("DELETE /modes/current", s.handleDisableMode)
+
+	// color mask management
+	mux.HandleFunc("PUT /colorMasks/{mask}", s.handleSetColorMask)
+	mux.HandleFunc("DELETE /colorMasks", s.handleDisableColorMask)
 
 	return mux
 }
@@ -184,40 +205,38 @@ func (s *LEDServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
-	type AllPatternsRequest struct {
-		Patterns Patterns `json:"patterns"`
+	patterns := make(map[string]PatternInfo)
+	for name, pattern := range s.patterns {
+		patterns[name] = PatternInfo{
+			Label:      pattern.GetLabel(),
+			Parameters: pattern.GetPatternUpdateRequest().GetParameters(),
+		}
 	}
 
-	patternsReq := AllPatternsRequest{
-		Patterns: s.patterns,
+	colorMasks := make(map[string]ColorMaskInfo)
+	for name, mask := range s.colorMasks {
+		colorMasks[name] = ColorMaskInfo{
+			Label:      mask.GetLabel(),
+			Parameters: mask.GetPatternUpdateRequest().GetParameters(),
+		}
 	}
 
-	jsonData, err := json.Marshal(patternsReq)
-	if err != nil {
-		fmt.Printf("could not marshal json: %s\n", err)
-		return
+	response := PatternsResponse{
+		Patterns:   patterns,
+		ColorMasks: colorMasks,
 	}
 
-	fmt.Fprint(w, string(jsonData))
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {
 	patternName := r.PathValue("pattern")
 
-	pattern, exists := s.patterns[patternName]
-	if !exists {
-		http.Error(w, "Pattern not found", http.StatusNotFound)
-		return
-	}
-
-	parameters := pattern.GetPatternUpdateRequest()
+	// get the current pattern's update request structure
+	parameters := s.controller.patterns[patternName].GetPatternUpdateRequest()
 	if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := pattern.UpdateParameters(parameters.GetParameters()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -227,7 +246,11 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 		s.controller.currentMode = nil
 	}
 
-	s.controller.SetPattern(pattern)
+	// handles parameter updates without transition
+	if err := s.controller.UpdatePattern(patternName, parameters); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -285,5 +308,36 @@ func (s *LEDServer) handleDisableMode(w http.ResponseWriter, r *http.Request) {
 		s.controller.currentMode.Stop()
 		s.controller.currentMode = nil
 	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *LEDServer) handleSetColorMask(w http.ResponseWriter, r *http.Request) {
+	maskName := r.PathValue("mask")
+
+	mask, exists := s.colorMasks[maskName]
+	if !exists {
+		http.Error(w, "Color mask not found", http.StatusNotFound)
+		return
+	}
+
+	// only try to decode parameters if there's a request body
+	if r.ContentLength > 0 {
+		parameters := mask.GetPatternUpdateRequest()
+		if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := mask.UpdateParameters(parameters.GetParameters()); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	s.controller.SetColorMask(mask)
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *LEDServer) handleDisableColorMask(w http.ResponseWriter, r *http.Request) {
+	s.controller.SetColorMask(nil)
 	w.WriteHeader(http.StatusOK)
 }

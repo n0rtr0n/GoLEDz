@@ -9,6 +9,7 @@ import (
 )
 
 type RainbowPattern struct {
+	BasePattern
 	pixelMap   *PixelMap
 	currentHue float64
 	Parameters RainbowParameters `json:"parameters"`
@@ -64,7 +65,7 @@ func (r *RainbowUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *RainbowPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &RainbowUpdateRequest{
-		Parameters: RainbowParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

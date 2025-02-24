@@ -9,6 +9,7 @@ import (
 )
 
 type RainbowPinwheelPattern struct {
+	BasePattern
 	pixelMap   *PixelMap
 	currentHue float64
 	Parameters RainbowPinwheelParameters `json:"parameters"`
@@ -78,7 +79,7 @@ func (r *RainbowPinwheelUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *RainbowPinwheelPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &RainbowPinwheelUpdateRequest{
-		Parameters: RainbowPinwheelParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

@@ -10,6 +10,7 @@ const STRIPES_STARTING_POSITION = 0
 const STRIPES_ENDING_POSITION = MAX_X
 
 type StripesPattern struct {
+	BasePattern     // Embed the base pattern
 	pixelMap        *PixelMap
 	currentPosition float64
 	Parameters      StripesParameters `json:"parameters"`
@@ -25,7 +26,6 @@ func (p *StripesPattern) UpdateParameters(parameters AdjustableParameters) error
 
 	p.Parameters.Speed.Update(newParams.Speed.Value)
 	p.Parameters.Size.Update(newParams.Size.Value)
-	p.Parameters.Color.Update(newParams.Color.Value)
 	p.Parameters.Rotation.Update(newParams.Rotation.Value)
 	p.Parameters.Stripes.Update(newParams.Stripes.Value)
 	return nil
@@ -34,7 +34,6 @@ func (p *StripesPattern) UpdateParameters(parameters AdjustableParameters) error
 type StripesParameters struct {
 	Speed    FloatParameter `json:"speed"`
 	Size     FloatParameter `json:"size"`
-	Color    ColorParameter `json:"color"`
 	Rotation FloatParameter `json:"rotation"`
 	Stripes  IntParameter   `json:"stripes"`
 }
@@ -42,13 +41,14 @@ type StripesParameters struct {
 func (p *StripesPattern) Update() {
 	speed := p.Parameters.Speed.Value
 	size := p.Parameters.Size.Value
-	color := p.Parameters.Color.Value
 	rotation := p.Parameters.Rotation.Value
 	stripes := p.Parameters.Stripes.Value
 
-	maxPosition := float64(MAX_X)
+	maxPosition := float64(STRIPES_ENDING_POSITION - STRIPES_STARTING_POSITION)
 	spaceBetweenStripes := maxPosition / float64(stripes)
 	positions := []float64{}
+
+	// Calculate positions for all stripes
 	for i := 0; i < stripes; i++ {
 		position := p.currentPosition + (float64(i) * spaceBetweenStripes)
 		position = math.Mod(position, maxPosition)
@@ -56,16 +56,21 @@ func (p *StripesPattern) Update() {
 	}
 
 	for i, pixel := range *p.pixelMap.pixels {
-
-		if isInAnyBox(Point{pixel.x, pixel.y}, size, rotation, positions) {
-			(*p.pixelMap.pixels)[i].color = color
+		point := Point{pixel.x, pixel.y}
+		if isInAnyBox(point, size, rotation, positions) {
+			if p.colorMask != nil {
+				(*p.pixelMap.pixels)[i].color = p.colorMask.GetColorAt(point)
+			} else {
+				(*p.pixelMap.pixels)[i].color = Color{255, 255, 255} // Default white if no mask
+			}
 		} else {
-			(*p.pixelMap.pixels)[i].color = Color{}
+			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
 		}
 	}
 
 	p.currentPosition = math.Mod(p.currentPosition+speed, float64(maxPosition))
 }
+
 func isInAnyBox(point Point, size float64, rotation float64, positions []float64) bool {
 	for _, position := range positions {
 		if isInBox(point, size, rotation, position) {
@@ -138,7 +143,7 @@ func (r *StripesUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *StripesPattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &StripesUpdateRequest{
-		Parameters: StripesParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

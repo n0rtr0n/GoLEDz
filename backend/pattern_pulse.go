@@ -10,6 +10,7 @@ import (
 const MAX_CURSOR float64 = 180.0
 
 type PulsePattern struct {
+	BasePattern
 	pixelMap   *PixelMap
 	cursor     float64
 	Parameters PulseParameters `json:"parameters"`
@@ -59,7 +60,7 @@ func (r *PulseUpdateRequest) GetParameters() AdjustableParameters {
 
 func (p *PulsePattern) GetPatternUpdateRequest() PatternUpdateRequest {
 	return &PulseUpdateRequest{
-		Parameters: PulseParameters{},
+		Parameters: p.Parameters,
 	}
 }
 

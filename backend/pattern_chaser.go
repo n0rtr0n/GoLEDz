@@ -67,7 +67,7 @@ func (p *ChaserPattern) Update() {
 		if width > 0 && (chaserPos%width < uint16(size)) {
 			(*p.pixelMap.pixels)[i].color = color
 		} else {
-			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
+			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0, 0}
 		}
 	}
 

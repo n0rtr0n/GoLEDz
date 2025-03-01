@@ -121,12 +121,69 @@ func (pc *PixelController) organizePixelsByUniverse(pixelMap *PixelMap) {
 // prepares the byte data for a specific universe
 func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 	bytes := make([]byte, 512)
+
+	// Set all bytes to zero initially
+	for i := range bytes {
+		bytes[i] = 0
+	}
+
+	// Now write the pixel data
 	for _, pixel := range pc.pixelsByUniverse[universe] {
-		pos := pixel.channelPosition - 1
-		startIndex := pos * 3
-		endIndex := startIndex + 3
-		rgbBytes := pixel.color.toString()
-		copy(bytes[startIndex:endIndex], rgbBytes)
+		// Calculate the actual DMX position based on channel position and pixel type
+		channelsPerPixel := int(pixel.pixelType) // 3 for RGB, 4 for RGBW
+		pos := (pixel.channelPosition - 1) * uint16(channelsPerPixel)
+
+		// Write color values to consecutive channels based on color ordering
+		if pos+uint16(channelsPerPixel)-1 < 512 {
+			// Map the color values according to the pixel's color order
+			var colorValues [4]byte
+
+			// Default initialization for RGB(W)
+			colorValues[0] = byte(pixel.color.R)
+			colorValues[1] = byte(pixel.color.G)
+			colorValues[2] = byte(pixel.color.B)
+			if pixel.pixelType == PixelRGBW {
+				colorValues[3] = byte(pixel.color.W)
+			}
+
+			// Apply the correct color ordering
+			switch pixel.colorOrder {
+			case RGB: // Default ordering (R,G,B)
+				// Already set correctly
+			case RBG: // (R,B,G)
+				// Swap G and B
+				colorValues[1], colorValues[2] = colorValues[2], colorValues[1]
+			case BRG: // (B,R,G)
+				// For BRG, we need to rearrange RGB -> BRG
+				r, g, b := colorValues[0], colorValues[1], colorValues[2]
+				colorValues[0] = b // B goes to first position
+				colorValues[1] = r // R goes to second position
+				colorValues[2] = g // G goes to third position
+			case BGR: // (B,G,R)
+				// For BGR, we need to reverse RGB
+				r, g, b := colorValues[0], colorValues[1], colorValues[2]
+				colorValues[0] = b // B goes to first position
+				colorValues[1] = g // G goes to second position
+				colorValues[2] = r // R goes to third position
+			case GRB: // (G,R,B)
+				// For GRB, we need to rearrange RGB -> GRB
+				r, g, b := colorValues[0], colorValues[1], colorValues[2]
+				colorValues[0] = g // G goes to first position
+				colorValues[1] = r // R goes to second position
+				colorValues[2] = b // B goes to third position
+			case GBR: // (G,B,R)
+				// For GBR, we need to rearrange RGB -> GBR
+				r, g, b := colorValues[0], colorValues[1], colorValues[2]
+				colorValues[0] = g // G goes to first position
+				colorValues[1] = b // B goes to second position
+				colorValues[2] = r // R goes to third position
+			}
+
+			// Write the remapped values to the output buffer
+			for i := 0; i < channelsPerPixel; i++ {
+				bytes[pos+uint16(i)] = colorValues[i]
+			}
+		}
 	}
 	return bytes
 }

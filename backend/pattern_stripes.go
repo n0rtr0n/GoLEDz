@@ -61,10 +61,10 @@ func (p *StripesPattern) Update() {
 			if p.colorMask != nil {
 				(*p.pixelMap.pixels)[i].color = p.colorMask.GetColorAt(point)
 			} else {
-				(*p.pixelMap.pixels)[i].color = Color{255, 255, 255} // Default white if no mask
+				(*p.pixelMap.pixels)[i].color = Color{255, 255, 255, 0} // Default white if no mask
 			}
 		} else {
-			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0}
+			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0, 0}
 		}
 	}
 

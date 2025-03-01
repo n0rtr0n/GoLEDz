@@ -59,3 +59,23 @@ func (errorTracker *ErrorTracker) IsInBackoff() bool {
 	defer errorTracker.mutex.Unlock()
 	return errorTracker.backoff
 }
+
+func (et *ErrorTracker) RecordError(message string) {
+	et.mutex.Lock()
+	defer et.mutex.Unlock()
+
+	et.errors++
+
+	// reset if needed
+	now := time.Now()
+	if now.Sub(et.lastReset) > et.windowSize {
+		et.errors = 1
+		et.lastReset = now
+		et.backoff = false
+	}
+
+	// backoff if we've exceeded the max errors
+	if et.errors >= et.maxErrors && !et.backoff {
+		et.backoff = true
+	}
+}

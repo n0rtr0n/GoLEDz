@@ -33,14 +33,7 @@ type Color struct {
 	R colorPigment `json:"r"`
 	G colorPigment `json:"g"`
 	B colorPigment `json:"b"`
-}
-
-func (c *Color) toString() []byte {
-	return []byte{
-		byte(c.R),
-		byte(c.G),
-		byte(c.B),
-	}
+	W colorPigment `json:"w,omitempty"`
 }
 
 type Gradient struct {
@@ -57,6 +50,7 @@ func brightnessAdjustedColor(color Color, brightness float64) Color {
 		brightnessAdjustedColorPigment(color.R, brightness),
 		brightnessAdjustedColorPigment(color.G, brightness),
 		brightnessAdjustedColorPigment(color.B, brightness),
+		brightnessAdjustedColorPigment(color.W, brightness),
 	}
 }
 

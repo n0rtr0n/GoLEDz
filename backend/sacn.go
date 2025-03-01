@@ -48,15 +48,13 @@ type Transmitter struct {
 }
 
 type Universe struct {
-	number           uint16
-	sequence         uint8
-	destinations     []Destination
-	data             []byte
-	dataChan         chan []byte
-	lastSent         time.Time
-	priority         uint8
-	forceSync        bool
-	streamTerminated bool
+	number       uint16
+	sequence     uint8
+	destinations []Destination
+	data         []byte
+	dataChan     chan []byte
+	lastSent     time.Time
+	priority     uint8
 }
 
 type TransmitterConfig struct {
@@ -105,32 +103,33 @@ func (t *Transmitter) createPacket(universe *Universe) []byte {
 	copy(packet[4:16], []byte("ASC-E1.17\000\000\000")) // ACN Packet Identifier
 
 	// Root Layer PDU (bytes 16-37)
-	copy(packet[16:18], calculateFlagsAndLength(uint16(len(universe.data)+110)))
-	copy(packet[18:22], []byte{0x00, 0x00, 0x00, 0x04}) // Root Vector
-	copy(packet[22:38], t.cid[:])                       // CID
+	flagsLength := calculateFlagsAndLength(uint16(len(universe.data) + 110))
+	copy(packet[16:18], flagsLength)                      // Flags and Length
+	binary.BigEndian.PutUint32(packet[18:22], 0x00000004) // Root Vector
+	copy(packet[22:38], t.cid[:])                         // CID
 
 	// Framing Layer PDU
-	copy(packet[38:40], calculateFlagsAndLength(uint16(len(universe.data)+88)))
-	copy(packet[40:44], []byte{0x00, 0x00, 0x00, 0x02}) // Framing Vector
-	copy(packet[44:108], padString(t.sourceName, 64))   // Source Name
+	framingFlagsLength := calculateFlagsAndLength(uint16(len(universe.data) + 88))
+	copy(packet[38:40], framingFlagsLength)               // Flags and Length
+	binary.BigEndian.PutUint32(packet[40:44], 0x00000002) // Framing Vector
+	copy(packet[44:108], padString(t.sourceName, 64))     // Source Name
 
-	packet[108] = universe.priority     // Priority
-	packet[109] = 0x00                  // Sync Address
-	packet[110] = 0x00                  // Sync Address
-	packet[111] = universe.sequence     // Sequence Number
-	packet[112] = 0x00                  // Options Flags
-	packet[113] = 0x00                  // First byte for Universe
-	packet[114] = byte(universe.number) // Universe Number (in correct position)
-	packet[115] = 0x72                  // Required by protocol
-	packet[116] = 0x0b                  // Required by protocol
-	packet[117] = DMPVector             // 0x02
-	packet[118] = 0xa1                  // Address & Data Type
+	packet[108] = universe.priority                     // Priority
+	binary.BigEndian.PutUint16(packet[109:111], 0x0000) // Sync Address (0 for non-synchronized)
+	packet[111] = universe.sequence                     // Sequence Number
+	packet[112] = 0x00                                  // Options Flags
+	packet[113] = byte(universe.number >> 8)            // High byte of universe number
+	packet[114] = byte(universe.number & 0xFF)          // Low byte of universe number
 
 	// DMP Layer
-	packet[119] = 0x00 // First Property Address
-	packet[120] = 0x00 // First Property Address
-	packet[121] = 0x00 // Address Increment
-	packet[122] = 0x01 // Address Increment
+	packet[115] = 0x72      // DMP Layer flags and length
+	packet[116] = 0x0b      // DMP Layer length low byte
+	packet[117] = DMPVector // DMP Vector (0x02)
+	packet[118] = 0xa1      // DMP Address & Data Type
+	packet[119] = 0x00      // First Property Address
+	packet[120] = 0x00      // First Property Address
+	packet[121] = 0x00      // Address Increment
+	packet[122] = 0x01      // Address Increment
 	binary.BigEndian.PutUint16(packet[123:125], uint16(len(universe.data)+1))
 	packet[125] = DefaultStartCode // DMX Start Code (0x00)
 
@@ -210,14 +209,12 @@ func (t *Transmitter) sendToDestinations(universe *Universe) {
 		return
 	}
 
+	// Increment sequence before creating packet
+	universe.sequence = (universe.sequence + 1) % 0xFF // Ensure it wraps around at 255
+
 	packet := t.createPacket(universe)
-	universe.sequence++
 
 	for _, dest := range universe.destinations {
-		if config.LocalOnly {
-			continue
-		}
-
 		if _, err := t.conn.WriteToUDP(packet, dest.Addr); err != nil {
 			log.Printf("Error sending to universe %d: %v", universe.number, err)
 			continue

@@ -362,3 +362,24 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 
 	return patterns
 }
+
+func registerModes(pixelMap *PixelMap, patterns map[string]Pattern) map[string]PatternMode {
+	modes := make(map[string]PatternMode)
+
+	randomMode := &RandomMode{
+		pixelMap: pixelMap,
+		patterns: patterns,
+		Label:    "Random",
+		Parameters: RandomParameters{
+			SwitchInterval: FloatParameter{
+				Min:   floatPointer(1.0),
+				Max:   60.0,
+				Value: 15.0,
+				Type:  "float",
+			},
+		},
+	}
+
+	modes[randomMode.GetName()] = randomMode
+	return modes
+}

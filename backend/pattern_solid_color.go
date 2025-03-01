@@ -27,9 +27,8 @@ func (p *SolidColorPattern) UpdateParameters(parameters AdjustableParameters) er
 }
 
 func (p *SolidColorPattern) Update() {
-	color := p.Parameters.Color.Value
 	for i := range *p.pixelMap.pixels {
-		(*p.pixelMap.pixels)[i].color = color
+		(*p.pixelMap.pixels)[i].color = p.Parameters.Color.Value
 	}
 }
 

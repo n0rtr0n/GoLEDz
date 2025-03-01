@@ -18,7 +18,13 @@ func buildPixelGrid() *[]Pixel {
 		xPos = int16(xStart + i*spacing)
 		for j := 0; j < 50; j++ {
 			yPos = int16(yStart + j*spacing)
-			pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: uint16(i + 1), channelPosition: uint16(j + 1)})
+			pixels = append(pixels, Pixel{
+				x:               xPos,
+				y:               yPos,
+				universe:        uint16(i + 1),
+				channelPosition: uint16(j + 1),
+				color:           Color{R: 0, G: 0, B: 0, W: 0},
+			})
 		}
 	}
 	return &pixels
@@ -31,31 +37,51 @@ func build2ChannelsOfPixels() *[]Pixel {
 	yStart := 200
 	spacing := 5
 	// just two channels for now
-	for i := 0; i < 150; i++ {
+	for i := 0; i < 128; i++ {
 		xPos := int16(xStart + i*spacing)
 
 		y1Pos := int16(yStart)
 		y2Pos := int16(yStart + 20)
 
-		pixels = append(pixels, Pixel{x: xPos, y: y1Pos, universe: 1, channelPosition: uint16(i + 1)})
-		pixels = append(pixels, Pixel{x: xPos, y: y2Pos, universe: 3, channelPosition: uint16(i + 1)})
+		pixels = append(pixels, Pixel{
+			x:               xPos,
+			y:               y1Pos,
+			universe:        1,
+			channelPosition: uint16(i + 1),
+			color:           Color{R: 0, G: 0, B: 0, W: 0},
+		})
+		pixels = append(pixels, Pixel{
+			x:               xPos,
+			y:               y2Pos,
+			universe:        3,
+			channelPosition: uint16(i + 1),
+			color:           Color{R: 0, G: 0, B: 0, W: 0},
+		})
 	}
 	return &pixels
 }
 
-func buildMammothSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16, sections []Section) *[]Pixel {
-
+func buildMammothSegment(universe uint16, startingChannelPosition uint16, xStart int16, yStart int16, rotationDegrees int16, sections []Section, pixelType PixelType, colorOrder ColorOrder) *[]Pixel {
 	pixels := []Pixel{}
 	xPos := xStart
 	yPos := yStart
-	channelPosition := startingChannelNumber
+	channelPosition := startingChannelPosition
 	bigPixelsSpacing := int16(10)
-	smallPixelsSpacing := int16(8)
-	bigPixelsAlongEachSide := int16(10)
-	smallPixelsAlongEachSide := int16(12)
+	smallPixelsSpacing := int16(11)
+	bigPixelsAlongEachSide := int16(7)
+	smallPixelsAlongEachSide := int16(6)
 
 	for i := int16(0); i < bigPixelsAlongEachSide; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
+		pixels = append(pixels, Pixel{
+			x:               xPos,
+			y:               yPos,
+			universe:        universe,
+			channelPosition: channelPosition,
+			sections:        sections,
+			pixelType:       pixelType,
+			color:           Color{R: 0, G: 0, B: 0, W: 0},
+			colorOrder:      colorOrder,
+		})
 		if i < bigPixelsAlongEachSide-1 {
 			xTranslated, yTranslated := rotate(bigPixelsSpacing, 0, rotationDegrees)
 			xPos += xTranslated
@@ -70,7 +96,16 @@ func buildMammothSegment(universe uint16, startingChannelNumber uint16, xStart i
 	yPos += yTranslated
 
 	for i := int16(0); i < bigPixelsAlongEachSide; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
+		pixels = append(pixels, Pixel{
+			x:               xPos,
+			y:               yPos,
+			universe:        universe,
+			channelPosition: channelPosition,
+			sections:        sections,
+			pixelType:       pixelType,
+			color:           Color{R: 0, G: 0, B: 0, W: 0},
+			colorOrder:      colorOrder,
+		})
 		if i < bigPixelsAlongEachSide-1 {
 			xTranslated, yTranslated := rotate(-bigPixelsSpacing, 0, rotationDegrees)
 			xPos += xTranslated
@@ -85,7 +120,16 @@ func buildMammothSegment(universe uint16, startingChannelNumber uint16, xStart i
 	yPos = yStart + yTranslated
 
 	for i := int16(0); i < smallPixelsAlongEachSide; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
+		pixels = append(pixels, Pixel{
+			x:               xPos,
+			y:               yPos,
+			universe:        universe,
+			channelPosition: channelPosition,
+			sections:        sections,
+			pixelType:       pixelType,
+			color:           Color{R: 0, G: 0, B: 0, W: 0},
+			colorOrder:      colorOrder,
+		})
 		xTranslated, yTranslated := rotate(smallPixelsSpacing, 0, rotationDegrees)
 		xPos += xTranslated
 		yPos += yTranslated
@@ -95,7 +139,7 @@ func buildMammothSegment(universe uint16, startingChannelNumber uint16, xStart i
 	return &pixels
 }
 
-func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16, sections []Section) *[]Pixel {
+func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int16, yStart int16, rotationDegrees int16, sections []Section, pixelType PixelType, colorOrder ColorOrder) *[]Pixel {
 	pixels := []Pixel{}
 	xPos := xStart
 	yPos := yStart
@@ -104,13 +148,29 @@ func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int1
 	totalPixels := int16(60)
 
 	for i := int16(0); i < totalPixels; i++ {
-		pixels = append(pixels, Pixel{x: xPos, y: yPos, universe: universe, channelPosition: channelPosition, sections: sections})
+		pixels = append(pixels, Pixel{
+			x:               xPos,
+			y:               yPos,
+			universe:        universe,
+			channelPosition: channelPosition,
+			sections:        sections,
+			pixelType:       pixelType,
+			color:           Color{R: 0, G: 0, B: 0, W: 0},
+			colorOrder:      colorOrder,
+		})
 		xTranslated, yTranslated := rotate(pixelsSpacing, 0, rotationDegrees)
 		xPos += xTranslated
 		yPos += yTranslated
 		channelPosition += 1
 	}
 	return &pixels
+}
+
+func calculatePoint(x int16, y int16, angle float64, distance float64) (int16, int16) {
+	radians := angle * math.Pi / 180.0
+	newX := x + int16(distance*math.Cos(radians))
+	newY := y + int16(distance*math.Sin(radians))
+	return newX, newY
 }
 
 func rotate(x int16, y int16, rotationDegrees int16) (int16, int16) {

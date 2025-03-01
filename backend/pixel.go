@@ -32,11 +32,20 @@ type Section struct {
 	label string
 }
 
+// PixelType defines whether a pixel is RGB (3 channels) or RGBW (4 channels)
+type PixelType uint8
+
+const (
+	PixelRGB  PixelType = 3 // 3 channels
+	PixelRGBW PixelType = 4 // 4 channels
+)
+
 type Pixel struct {
 	x               int16
 	y               int16
 	color           Color
 	colorOrder      ColorOrder // TODO: implement color correction based on color ordering
+	pixelType       PixelType  // RGB or RGBW
 	universe        uint16
 	channelPosition uint16
 	sections        []Section
@@ -81,6 +90,7 @@ func (p *PixelMap) toJSON() ([]byte, error) {
 			"g": pixel.color.G,
 			"b": pixel.color.B,
 		}
+
 		data = append(data, newPixel)
 	}
 

@@ -41,7 +41,7 @@ func (p *PulsePattern) Update() {
 	p.cursor = math.Mod(p.cursor+(speed), MAX_CURSOR)
 	brightness := math.Sin(degreesToRadians(p.cursor)) * 100
 
-	for i, _ := range *p.pixelMap.pixels {
+	for i := range *p.pixelMap.pixels {
 		(*p.pixelMap.pixels)[i].color = brightnessAdjustedColor(color, brightness)
 	}
 }

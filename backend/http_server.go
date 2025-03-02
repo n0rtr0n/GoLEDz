@@ -98,7 +98,7 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 	mux.HandleFunc("PUT /colorMasks/{mask}", s.handleSetColorMask)
 	mux.HandleFunc("DELETE /colorMasks", s.handleDisableColorMask)
 
-	// Options endpoints
+	// options endpoints
 	mux.HandleFunc("GET /options", s.handleGetOptions)
 	mux.HandleFunc("PUT /options/{option}", s.handleUpdateOption)
 
@@ -216,22 +216,21 @@ func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
 		Options:    s.options,
 	}
 
-	// Add patterns to response
+	// add patterns to response
 	for name, pattern := range s.patterns {
-		// Create a response that includes both the pattern update request and the label
 		patternResponse := struct {
 			Label      string               `json:"label"`
 			Parameters AdjustableParameters `json:"parameters"`
 		}{
-			Label:      pattern.GetLabel(), // Add the label
+			Label:      pattern.GetLabel(),
 			Parameters: pattern.GetPatternUpdateRequest().GetParameters(),
 		}
 		response.Patterns[name] = patternResponse
 	}
 
-	// Add color masks to response
+	// add color masks to response
 	for name, mask := range s.colorMasks {
-		// Create a response that includes both the mask update request and the label
+		// create a response that includes both the mask update request and the label
 		maskResponse := struct {
 			Label      string               `json:"label"`
 			Parameters AdjustableParameters `json:"parameters"`
@@ -358,7 +357,6 @@ func (s *LEDServer) handleDisableColorMask(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 }
 
-// Handler for GET /options
 func (s *LEDServer) handleGetOptions(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -367,18 +365,15 @@ func (s *LEDServer) handleGetOptions(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s.options)
 }
 
-// Handler for PUT /options/{option}
 func (s *LEDServer) handleUpdateOption(w http.ResponseWriter, r *http.Request) {
 	optionID := r.PathValue("option")
 
-	// Parse the request body
 	var valueMap map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&valueMap); err != nil {
 		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Check if the value key exists
 	value, exists := valueMap["value"]
 	if !exists {
 		http.Error(w, "Request must include a 'value' field", http.StatusBadRequest)
@@ -388,7 +383,7 @@ func (s *LEDServer) handleUpdateOption(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Update the option
+	// update the option
 	if err := s.options.SetOption(optionID, value); err != nil {
 		if err == ErrOptionNotFound {
 			http.Error(w, "Unknown option: "+optionID, http.StatusBadRequest)
@@ -400,36 +395,10 @@ func (s *LEDServer) handleUpdateOption(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the controller with the new options
+	// update the controller with the new options
 	s.controller.UpdateOptions(s.options)
 
-	// Return the updated options
+	// return the updated options
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(s.options)
-}
-
-func (s *LEDServer) handleUpdateOptions(w http.ResponseWriter, r *http.Request) {
-	var options Options
-	if err := json.NewDecoder(r.Body).Decode(&options); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Update options in the server config
-	s.options = options
-
-	// Update controller options
-	s.controller.UpdateOptions(options)
-
-	// Handle mode change if needed
-	if options.ActiveMode != "" {
-		if mode, exists := s.modes[options.ActiveMode]; exists {
-			s.controller.SetMode(mode)
-		} else if options.ActiveMode == "none" {
-			// Special case to disable any active mode
-			s.controller.SetMode(nil)
-		}
-	}
-
-	w.WriteHeader(http.StatusOK)
 }

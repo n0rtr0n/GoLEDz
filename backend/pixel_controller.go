@@ -110,18 +110,18 @@ func (pc *PixelController) organizePixelsByUniverse(pixelMap *PixelMap) {
 func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 	bytes := make([]byte, 512)
 
-	// Set all bytes to zero initially
+	// set all bytes to zero initially
 	for i := range bytes {
 		bytes[i] = 0
 	}
 
-	// Now write the pixel data
+	// now write the pixel data
 	for _, pixel := range pc.pixelsByUniverse[universe] {
-		// Calculate the actual DMX position based on channel position and pixel type
+		// calculate the actual DMX position based on channel position and pixel type
 		channelsPerPixel := int(pixel.pixelType) // 3 for RGB, 4 for RGBW
 		pos := (pixel.channelPosition - 1) * uint16(channelsPerPixel)
 
-		// Write color values to consecutive channels based on color ordering
+		// write color values to consecutive channels based on color ordering
 		if pos+uint16(channelsPerPixel)-1 < 512 {
 			// map the color values according to the pixel's color order
 			var colorValues [4]byte
@@ -274,7 +274,7 @@ func (pc *PixelController) SetUpdateCallback(callback func(*PixelMap)) {
 }
 
 func (pc *PixelController) SetColorMask(mask ColorMaskPattern) error {
-	// Don't create transition if we're just updating parameters
+	// don't create transition if we're just updating parameters
 	if pc.isParameterUpdate {
 		pc.currentColorMask = mask
 		return nil
@@ -289,26 +289,24 @@ func (pc *PixelController) SetColorMask(mask ColorMaskPattern) error {
 }
 
 func (pc *PixelController) Update() {
-	// Check for color mask changes
+	// check for color mask changes
 	var newMask ColorMaskPattern
 	select {
 	case newMask = <-pc.colorMaskChange:
-		// Get the colorMaskTransitionEnabled option
 		colorMaskTransitionEnabledOpt, _ := pc.options.GetOption("colorMaskTransitionEnabled")
 		colorMaskTransitionEnabled := colorMaskTransitionEnabledOpt.GetValue().(bool)
 
-		// Only create transition if it's a different mask, not updating parameters, and transitions are enabled
+		// only create transition if it's a different mask, not updating parameters, and transitions are enabled
 		if !pc.isParameterUpdate && colorMaskTransitionEnabled &&
 			(pc.currentColorMask == nil || pc.currentColorMask.GetName() != newMask.GetName()) {
-			// Create transition pixels
+			// create transition pixels
 			sourcePixels := make([]Pixel, len(*pc.pixelMap.pixels))
 			copy(sourcePixels, *pc.pixelMap.pixels)
 
-			// Get the colorMaskTransitionDuration option
 			colorMaskTransitionDurationOpt, _ := pc.options.GetOption("colorMaskTransitionDuration")
 			colorMaskTransitionDuration := time.Duration(colorMaskTransitionDurationOpt.GetValue().(int)) * time.Millisecond
 
-			// Store current state
+			// store current state
 			pc.transition = &struct {
 				sourcePattern Pattern
 				targetPattern Pattern
@@ -320,7 +318,7 @@ func (pc *PixelController) Update() {
 				targetMask    ColorMaskPattern
 			}{
 				sourcePattern: pc.currentPattern,
-				targetPattern: pc.currentPattern, // Same pattern, different mask
+				targetPattern: pc.currentPattern, // same pattern, different mask
 				startTime:     time.Now(),
 				duration:      colorMaskTransitionDuration,
 				sourcePixels:  sourcePixels,
@@ -329,20 +327,19 @@ func (pc *PixelController) Update() {
 				targetMask:    newMask,
 			}
 		} else {
-			// Just update the mask without transition
+			// just update the mask without transition
 			pc.currentColorMask = newMask
 			if pc.currentPattern != nil {
 				pc.currentPattern.SetColorMask(pc.currentColorMask)
 			}
 		}
 	default:
-		// No color mask change pending
+		// no color mask change pending
 	}
 
-	// Handle pattern changes
+	// handle pattern changes
 	select {
 	case newPattern := <-pc.patternChange:
-		// Get the patternTransitionEnabled option
 		patternTransitionEnabledOpt, _ := pc.options.GetOption("patternTransitionEnabled")
 		patternTransitionEnabled := patternTransitionEnabledOpt.GetValue().(bool)
 
@@ -354,7 +351,6 @@ func (pc *PixelController) Update() {
 		sourcePixels := make([]Pixel, len(*pc.pixelMap.pixels))
 		copy(sourcePixels, *pc.pixelMap.pixels)
 
-		// Get the patternTransitionDuration option
 		patternTransitionDurationOpt, _ := pc.options.GetOption("patternTransitionDuration")
 		patternTransitionDuration := time.Duration(patternTransitionDurationOpt.GetValue().(int)) * time.Millisecond
 
@@ -381,35 +377,35 @@ func (pc *PixelController) Update() {
 		// no pattern change pending, continue with normal update
 	}
 
-	// Handle active transition
+	// handle active transition
 	if pc.transition != nil && !pc.isParameterUpdate {
 		elapsed := time.Since(pc.transition.startTime)
 		progress := float64(elapsed) / float64(pc.transition.duration)
 
-		// Check if this is a color mask transition
+		// check if this is a color mask transition
 		if pc.transition.sourcePattern == pc.transition.targetPattern &&
 			pc.transition.sourceMask != nil && pc.transition.targetMask != nil {
 
-			// Create a custom blended color mask for this frame
+			// create a custom blended color mask for this frame
 			blendedMask := &blendedColorMask{
 				sourceMask: pc.transition.sourceMask,
 				targetMask: pc.transition.targetMask,
 				progress:   progress,
 			}
 
-			// Update both source and target masks
+			// update both source and target masks
 			pc.transition.sourceMask.Update()
 			pc.transition.targetMask.Update()
 
-			// Apply the blended mask to the pattern
+			// apply the blended mask to the pattern
 			pc.currentPattern.SetColorMask(blendedMask)
 
-			// Update the pattern with the blended mask
+			// update the pattern with the blended mask
 			pc.currentPattern.Update()
 		} else {
-			// Regular pattern transition
+			// regular pattern transition
 			if pc.transition.targetPattern != nil {
-				// Set the appropriate color mask on the target pattern
+				// set the appropriate color mask on the target pattern
 				if pc.transition.targetMask != nil {
 					pc.transition.targetPattern.SetColorMask(pc.transition.targetMask)
 				} else {
@@ -531,15 +527,11 @@ func (pc *PixelController) SetMode(mode PatternMode) {
 	pc.patternMu.Lock()
 	defer pc.patternMu.Unlock()
 
-	// Clear any existing transition
 	pc.transition = nil
-
-	// Set the new mode
 	pc.currentMode = mode
 
-	// If mode is nil, ensure we have a pattern active
+	// if mode is nil, ensure we have a pattern active
 	if mode == nil && pc.currentPattern == nil {
-		// Set a default pattern if none is active
 		for _, pattern := range pc.patterns {
 			pc.currentPattern = pattern
 			break
@@ -547,17 +539,11 @@ func (pc *PixelController) SetMode(mode PatternMode) {
 	}
 }
 
-// Update the UpdateOptions method to handle mode changes
+// update the UpdateOptions method to handle mode changes
 func (pc *PixelController) UpdateOptions(options Options) {
 	pc.patternMu.Lock()
 	pc.options = options
 	pc.patternMu.Unlock()
 
-	// Set transition duration
 	pc.SetTransitionDuration(options.TransitionDuration)
-
-	// Handle mode change if specified
-	if options.ActiveMode != "" {
-		// This will be handled by the server's handleUpdateOptions method
-	}
 }

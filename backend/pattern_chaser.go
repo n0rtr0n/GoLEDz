@@ -10,7 +10,6 @@ type ChaserPattern struct {
 	BasePattern
 	pixelMap        *PixelMap
 	currentPosition float64
-	currentHue      float64
 	Parameters      ChaserParameters `json:"parameters"`
 	Label           string           `json:"label,omitempty"`
 }

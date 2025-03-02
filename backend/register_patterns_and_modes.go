@@ -42,16 +42,6 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 				Value: true,
 				Type:  TYPE_BOOL,
 			},
-			Hue: FloatParameter{
-				Min:   floatPointer(0),
-				Max:   360.0,
-				Value: 120.0,
-				Type:  TYPE_FLOAT,
-			},
-			Rainbow: BooleanParameter{
-				Value: false,
-				Type:  TYPE_BOOL,
-			},
 		},
 		currentSaturation: 0.0,
 	}
@@ -68,14 +58,22 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		},
 		pixelMap: pixelMap,
 		Parameters: PulseParameters{
-			Color: ColorParameter{
-				Value: Color{R: 255, G: 0, B: 0},
-				Type:  TYPE_COLOR,
-			},
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
-				Max:   20.0,
-				Value: 1.0,
+				Max:   3.0,
+				Value: 0.5,
+				Type:  TYPE_FLOAT,
+			},
+			MinBrightness: FloatParameter{
+				Min:   floatPointer(0.0),
+				Max:   100.0,
+				Value: 10.0,
+				Type:  TYPE_FLOAT,
+			},
+			MaxBrightness: FloatParameter{
+				Min:   floatPointer(0.0),
+				Max:   100.0,
+				Value: 100.0,
 				Type:  TYPE_FLOAT,
 			},
 		},
@@ -98,12 +96,8 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		},
 		pixelMap: pixelMap,
 		Parameters: SpiralParameters{
-			Color1: ColorParameter{
-				Value: Color{R: 255, G: 0, B: 0},
-				Type:  TYPE_COLOR,
-			},
-			Color2: ColorParameter{
-				Value: Color{R: 0, G: 0, B: 255},
+			BackgroundColor: ColorParameter{
+				Value: Color{R: 0, G: 0, B: 0},
 				Type:  TYPE_COLOR,
 			},
 			Speed: FloatParameter{
@@ -134,7 +128,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		Parameters: StripesParameters{
 			Speed: FloatParameter{
 				Min:   floatPointer(0.1),
-				Max:   100.0,
+				Max:   50.0,
 				Value: 10.0,
 				Type:  TYPE_FLOAT,
 			},

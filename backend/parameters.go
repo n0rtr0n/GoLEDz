@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math"
 	"math/rand"
 )
 
@@ -39,19 +38,6 @@ type Color struct {
 type Gradient struct {
 	StartColor Color
 	EndColor   Color
-}
-
-func brightnessAdjustedColorPigment(color colorPigment, brightness float64) colorPigment {
-	return colorPigment(math.Round(float64(color) * float64(brightness) / 100))
-}
-
-func brightnessAdjustedColor(color Color, brightness float64) Color {
-	return Color{
-		brightnessAdjustedColorPigment(color.R, brightness),
-		brightnessAdjustedColorPigment(color.G, brightness),
-		brightnessAdjustedColorPigment(color.B, brightness),
-		brightnessAdjustedColorPigment(color.W, brightness),
-	}
 }
 
 type ColorParameter struct {

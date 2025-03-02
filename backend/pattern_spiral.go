@@ -22,24 +22,21 @@ func (p *SpiralPattern) UpdateParameters(parameters AdjustableParameters) error 
 	}
 
 	p.Parameters.Speed.Update(newParams.Speed.Value)
-	p.Parameters.Color1.Update(newParams.Color1.Value)
-	p.Parameters.Color2.Update(newParams.Color2.Value)
+	p.Parameters.BackgroundColor.Update(newParams.BackgroundColor.Value)
 	p.Parameters.MaxTurns.Update(newParams.MaxTurns.Value)
 	p.Parameters.Width.Update(newParams.Width.Value)
 	return nil
 }
 
 type SpiralParameters struct {
-	Speed    FloatParameter `json:"speed"`
-	Color1   ColorParameter `json:"color1"`
-	Color2   ColorParameter `json:"color2"`
-	MaxTurns IntParameter   `json:"maxTurns"`
-	Width    FloatParameter `json:"width"`
+	Speed           FloatParameter `json:"speed"`
+	BackgroundColor ColorParameter `json:"backgroundColor"`
+	MaxTurns        IntParameter   `json:"maxTurns"`
+	Width           FloatParameter `json:"width"`
 }
 
 func (p *SpiralPattern) Update() {
-	color1 := p.Parameters.Color1.Value
-	color2 := p.Parameters.Color2.Value
+	backgroundColor := p.Parameters.BackgroundColor.Value
 	speed := p.Parameters.Speed.Value
 	width := p.Parameters.Width.Value
 
@@ -57,11 +54,9 @@ func (p *SpiralPattern) Update() {
 		if isPointBetweenSpirals(point, params) {
 			if p.GetColorMask() != nil {
 				(*p.pixelMap.pixels)[i].color = p.GetColorMask().GetColorAt(point)
-			} else {
-				(*p.pixelMap.pixels)[i].color = color1
 			}
 		} else {
-			(*p.pixelMap.pixels)[i].color = color2
+			(*p.pixelMap.pixels)[i].color = backgroundColor
 		}
 	}
 	p.currentRotation += speed
@@ -146,13 +141,12 @@ func findClosestTurn(r float64, baseTheta float64, params SpiralParams, b float6
 	return bestTheta
 }
 
-// Check if a point lies between the two spirals
+// check if a point lies between the two spirals
 func isPointBetweenSpirals(p Point, params SpiralParams) bool {
 	// calculate growth rate based on turns
 	b := calculateGrowthRate(params)
 
-	// Convert rotation from degrees to radians
-	rotationRad := params.Rotation * math.Pi / 180
+	rotationRad := degreesToRadians(params.Rotation)
 
 	// get initial polar coordinates with rotation
 	r, baseTheta := toPolar(p, params.Center, rotationRad)

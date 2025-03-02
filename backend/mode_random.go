@@ -9,7 +9,6 @@ import (
 )
 
 type RandomMode struct {
-	pixelMap          *PixelMap
 	Label             string           `json:"label,omitempty"`
 	Parameters        RandomParameters `json:"parameters"`
 	patterns          map[string]Pattern

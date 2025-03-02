@@ -166,13 +166,6 @@ func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int1
 	return &pixels
 }
 
-func calculatePoint(x int16, y int16, angle float64, distance float64) (int16, int16) {
-	radians := angle * math.Pi / 180.0
-	newX := x + int16(distance*math.Cos(radians))
-	newY := y + int16(distance*math.Sin(radians))
-	return newX, newY
-}
-
 func rotate(x int16, y int16, rotationDegrees int16) (int16, int16) {
 	radians := degreesToRadians(float64(rotationDegrees))
 	newX := int16(float64(x)*math.Cos(float64(radians))) + int16(float64(y)*math.Sin(float64(radians)))

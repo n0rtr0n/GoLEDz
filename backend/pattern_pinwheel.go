@@ -12,7 +12,6 @@ type PinwheelPattern struct {
 	BasePattern
 	pixelMap          *PixelMap
 	currentSaturation float64
-	currentHue        float64
 	Parameters        PinwheelParameters `json:"parameters"`
 	Label             string             `json:"label,omitempty"`
 }
@@ -30,14 +29,10 @@ func (p *PinwheelPattern) UpdateParameters(parameters AdjustableParameters) erro
 	return nil
 }
 
-//{"parameters": {"speed": {"value": 1.0},"divisions":{"value": 4},"reversed": {"value": false},"hue": {"value": 120.0}}}
-
 type PinwheelParameters struct {
 	Speed     FloatParameter   `json:"speed"`
 	Divisions IntParameter     `json:"divisions"`
 	Reversed  BooleanParameter `json:"reversed"`
-	Hue       FloatParameter   `json:"hue"`
-	Rainbow   BooleanParameter `json:"rainbow"`
 }
 
 func (p *PinwheelPattern) Update() {
@@ -48,20 +43,19 @@ func (p *PinwheelPattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 		point := Point{pixel.x, pixel.y}
 
-		// Calculate rotation degrees
+		// calculate rotation degrees
 		rotationDegrees := calculateAngle(point, Point{CENTER_X, CENTER_Y})
 
-		// Calculate saturation based on rotation
+		// calculate saturation based on rotation
 		fractionDegrees := rotationDegrees / MAX_DEGREES * float64(divisions)
 		saturation := math.Mod(p.currentSaturation+fractionDegrees, MAX_SATURATION)
 
 		if p.GetColorMask() != nil {
-			// Get base color from mask
 			baseColor := p.GetColorMask().GetColorAt(point)
 
-			// Convert to HSV, modify saturation, convert back
-			h, s, v := RGBtoHSV(float64(baseColor.R)/255, float64(baseColor.G)/255, float64(baseColor.B)/255)
-			s = saturation // Apply pinwheel saturation effect
+			// convert to HSV, modify saturation, convert back
+			h, _, v := RGBtoHSV(float64(baseColor.R)/255, float64(baseColor.G)/255, float64(baseColor.B)/255)
+			s := saturation // apply pinwheel saturation effect
 			r, g, b := HSVtoRGB(h, s, v)
 
 			(*p.pixelMap.pixels)[i].color = Color{

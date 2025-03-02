@@ -55,25 +55,6 @@ func registerColorMasks() map[string]ColorMaskPattern {
 			},
 		},
 	}
-	rainbowMask := RainbowColorMask{
-		BasePattern: BasePattern{
-			Label: "Rainbow",
-		},
-		Parameters: RainbowParameters{
-			Speed: FloatParameter{
-				Min:   floatPointer(0.1),
-				Max:   10.0,
-				Value: 1.0,
-				Type:  TYPE_FLOAT,
-			},
-			Brightness: FloatParameter{
-				Min:   floatPointer(0.0),
-				Max:   100,
-				Value: 100,
-				Type:  TYPE_FLOAT,
-			},
-		},
-	}
 	rainbowDiagonalMask := RainbowDiagonalMask{
 		BasePattern: BasePattern{
 			Label: "Rainbow Diagonal",
@@ -147,7 +128,6 @@ func registerColorMasks() map[string]ColorMaskPattern {
 	masks[gradientMask.GetName()] = &gradientMask
 	masks[solidColorMask.GetName()] = &solidColorMask
 	masks[solidColorFadeMask.GetName()] = &solidColorFadeMask
-	masks[rainbowMask.GetName()] = &rainbowMask
 	masks[rainbowDiagonalMask.GetName()] = &rainbowDiagonalMask
 	masks[rainbowCircleMask.GetName()] = &rainbowCircleMask
 	masks[rainbowPinwheelMask.GetName()] = &rainbowPinwheelMask

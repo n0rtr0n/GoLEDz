@@ -1,5 +1,9 @@
 package main
 
+import (
+	"math"
+)
+
 // HSVtoRGB converts HSV color values to RGB
 // h: 0-360 degrees
 // s: 0-1
@@ -31,4 +35,45 @@ func HSVtoRGB(h, s, v float64) (float64, float64, float64) {
 	default:
 		return v, p, q
 	}
+}
+
+// RGBtoHSV converts RGB color values to HSV
+// r, g, b: 0-1
+// Returns h: 0-360 degrees, s: 0-1, v: 0-1
+func RGBtoHSV(r, g, b float64) (float64, float64, float64) {
+	max := math.Max(r, math.Max(g, b))
+	min := math.Min(r, math.Min(g, b))
+	delta := max - min
+
+	// Calculate value
+	v := max
+
+	// Calculate saturation
+	var s float64
+	if max != 0 {
+		s = delta / max
+	} else {
+		return 0, 0, v // r = g = b = 0, s = 0, h is undefined
+	}
+
+	// Calculate hue
+	var h float64
+	if delta == 0 {
+		return 0, s, v // r = g = b, h is undefined
+	}
+
+	switch max {
+	case r:
+		h = (g - b) / delta
+		if g < b {
+			h += 6
+		}
+	case g:
+		h = (b-r)/delta + 2
+	case b:
+		h = (r-g)/delta + 4
+	}
+	h *= 60 // Convert to degrees
+
+	return h, s, v
 }

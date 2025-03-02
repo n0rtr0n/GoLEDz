@@ -27,8 +27,6 @@ func (p *PinwheelPattern) UpdateParameters(parameters AdjustableParameters) erro
 	p.Parameters.Speed.Update(newParams.Speed.Value)
 	p.Parameters.Divisions.Update(newParams.Divisions.Value)
 	p.Parameters.Reversed.Update(newParams.Reversed.Value)
-	p.Parameters.Hue.Update(newParams.Hue.Value)
-	p.Parameters.Rainbow.Update((newParams.Rainbow.Value))
 	return nil
 }
 
@@ -46,55 +44,49 @@ func (p *PinwheelPattern) Update() {
 	speed := p.Parameters.Speed.Value
 	divisions := p.Parameters.Divisions.Value
 	reversed := p.Parameters.Reversed.Value
-	hue := p.Parameters.Hue.Value
-	rainbow := p.Parameters.Rainbow.Value
 
 	for i, pixel := range *p.pixelMap.pixels {
+		point := Point{pixel.x, pixel.y}
 
-		// this will go from 0 - 360
-		rotationDegrees := calculateAngle(Point{pixel.x, pixel.y}, Point{CENTER_X, CENTER_Y})
+		// Calculate rotation degrees
+		rotationDegrees := calculateAngle(point, Point{CENTER_X, CENTER_Y})
 
-		// we want to express this as a fraction of MAX_DEGREES, so this will be 0.0 - 1.0
+		// Calculate saturation based on rotation
 		fractionDegrees := rotationDegrees / MAX_DEGREES * float64(divisions)
-
-		// anything over 1.0 will loop back around to 0.0
 		saturation := math.Mod(p.currentSaturation+fractionDegrees, MAX_SATURATION)
 
-		if rainbow {
-			// fmt.Println("setting current hue to")
-			// fmt.Println(p.currentHue)
-			hue = p.currentHue
-		}
+		if p.GetColorMask() != nil {
+			// Get base color from mask
+			baseColor := p.GetColorMask().GetColorAt(point)
 
-		c := colorful.Hsv(hue, saturation, 1.0)
+			// Convert to HSV, modify saturation, convert back
+			h, s, v := RGBtoHSV(float64(baseColor.R)/255, float64(baseColor.G)/255, float64(baseColor.B)/255)
+			s = saturation // Apply pinwheel saturation effect
+			r, g, b := HSVtoRGB(h, s, v)
 
-		color := Color{
-			R: colorPigment(c.R * 255),
-			G: colorPigment(c.G * 255),
-			B: colorPigment(c.B * 255),
-		}
-		(*p.pixelMap.pixels)[i].color = color
-	}
-
-	if rainbow {
-		normalizedSpeed := 15 * speed
-		if reversed {
-			hue = MAX_HUE_VALUE + p.currentHue - normalizedSpeed
+			(*p.pixelMap.pixels)[i].color = Color{
+				R: colorPigment(r * 255),
+				G: colorPigment(g * 255),
+				B: colorPigment(b * 255),
+			}
 		} else {
-			hue = p.currentHue + normalizedSpeed
+			// Default to white with saturation effect if no mask
+			c := colorful.Hsv(0, saturation, 1.0) // White hue with varying saturation
+			(*p.pixelMap.pixels)[i].color = Color{
+				R: colorPigment(c.R * 255),
+				G: colorPigment(c.G * 255),
+				B: colorPigment(c.B * 255),
+			}
 		}
-		p.currentHue = math.Mod(hue, MAX_HUE_VALUE)
 	}
 
-	var sat float64
+	// Update saturation position
 	if reversed {
-		// ensures that this value will not dip below 0
-		sat = MAX_SATURATION + p.currentSaturation - speed
+		p.currentSaturation = MAX_SATURATION + p.currentSaturation - speed
 	} else {
-		sat = p.currentSaturation + speed
+		p.currentSaturation = p.currentSaturation + speed
 	}
-
-	p.currentSaturation = math.Mod(sat, MAX_SATURATION)
+	p.currentSaturation = math.Mod(p.currentSaturation, MAX_SATURATION)
 }
 
 func (p *PinwheelPattern) GetName() string {

@@ -23,7 +23,8 @@ type RandomMode struct {
 
 type RandomParameters struct {
 	BaseModeParameters
-	SwitchInterval FloatParameter `json:"switchInterval"`
+	SwitchInterval      FloatParameter   `json:"switchInterval"`
+	RandomizeColorMasks BooleanParameter `json:"randomizeColorMasks"`
 }
 
 func (m *RandomMode) GetCurrentPattern() Pattern {

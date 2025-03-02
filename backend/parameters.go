@@ -83,10 +83,19 @@ func (p *ColorParameter) Update(value interface{}) error {
 }
 
 func (p *ColorParameter) Randomize() {
+	// Generate a random hue (0-360), high saturation (0.7-1.0), and high value (0.7-1.0)
+	h := rand.Float64() * 360
+	s := 0.7 + rand.Float64()*0.3
+	v := 0.7 + rand.Float64()*0.3
+
+	// Convert HSV to RGB
+	r, g, b := HSVtoRGB(h, s, v)
+
+	// Set the color
 	p.Value = Color{
-		R: colorPigment(rand.Intn(int(MAX_PIGMENT_VALUE) + 1)),
-		G: colorPigment(rand.Intn(int(MAX_PIGMENT_VALUE) + 1)),
-		B: colorPigment(rand.Intn(int(MAX_PIGMENT_VALUE) + 1)),
+		R: colorPigment(r * 255),
+		G: colorPigment(g * 255),
+		B: colorPigment(b * 255),
 	}
 }
 
@@ -121,10 +130,12 @@ func (p *FloatParameter) Update(value interface{}) error {
 }
 
 func (p *FloatParameter) Randomize() {
-	if p.Min == nil || p.Max <= *p.Min {
-		return
+	if p.Min == nil {
+		return // Can't randomize without min value
 	}
-	p.Value = *p.Min + rand.Float64()*(p.Max-*p.Min)
+	min := *p.Min
+	rangeVal := p.Max - min
+	p.Value = min + rand.Float64()*rangeVal
 }
 
 type IntParameter struct {
@@ -158,10 +169,12 @@ func (p *IntParameter) Update(value interface{}) error {
 }
 
 func (p *IntParameter) Randomize() {
-	if p.Min == nil || p.Max <= *p.Min {
-		return
+	if p.Min == nil {
+		return // Can't randomize without min value
 	}
-	p.Value = *p.Min + rand.Intn(p.Max-*p.Min+1)
+	min := *p.Min
+	rangeVal := p.Max - min
+	p.Value = min + int(rand.Float64()*float64(rangeVal))
 }
 
 type BooleanParameter struct {
@@ -183,5 +196,5 @@ func (p *BooleanParameter) Update(value interface{}) error {
 }
 
 func (p *BooleanParameter) Randomize() {
-	p.Value = rand.Float32() < 0.5
+	p.Value = rand.Float64() > 0.5
 }

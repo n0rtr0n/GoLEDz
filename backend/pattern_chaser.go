@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-
-	"github.com/lucasb-eyer/go-colorful"
 )
 
 type ChaserPattern struct {
@@ -27,9 +25,7 @@ func (p *ChaserPattern) UpdateParameters(parameters AdjustableParameters) error 
 	p.Parameters.Speed.Update(newParams.Speed.Value)
 	p.Parameters.Size.Update(newParams.Size.Value)
 	p.Parameters.Spacing.Update(newParams.Spacing.Value)
-	p.Parameters.Color.Update(newParams.Color.Value)
 	p.Parameters.Reversed.Update(newParams.Reversed.Value)
-	p.Parameters.Rainbow.Update(newParams.Rainbow.Value)
 	return nil
 }
 
@@ -37,41 +33,32 @@ type ChaserParameters struct {
 	Speed    FloatParameter   `json:"speed"`
 	Size     IntParameter     `json:"size"`
 	Spacing  IntParameter     `json:"spacing"`
-	Color    ColorParameter   `json:"color"`
 	Reversed BooleanParameter `json:"reversed"`
-	Rainbow  BooleanParameter `json:"rainbow"`
 }
 
 func (p *ChaserPattern) Update() {
 	speed := p.Parameters.Speed.Value
 	size := p.Parameters.Size.Value
 	spacing := p.Parameters.Spacing.Value
-	color := p.Parameters.Color.Value
 	reversed := p.Parameters.Reversed.Value
-	rainbow := p.Parameters.Rainbow.Value
 
 	width := uint16(size + spacing)
 
 	for i, pixel := range *p.pixelMap.pixels {
-		if rainbow {
-			hueVal := math.Mod(p.currentHue+float64(pixel.channelPosition), MAX_HUE_VALUE)
-			c := colorful.Hsv(hueVal, 1.0, 1.0)
-			color = Color{
-				R: colorPigment(c.R * 255),
-				G: colorPigment(c.G * 255),
-				B: colorPigment(c.B * 255),
-			}
-		}
-
+		point := Point{pixel.x, pixel.y}
 		chaserPos := pixel.channelPosition + uint16(p.currentPosition)
+
 		if width > 0 && (chaserPos%width < uint16(size)) {
-			(*p.pixelMap.pixels)[i].color = color
+			if p.GetColorMask() != nil {
+				(*p.pixelMap.pixels)[i].color = p.GetColorMask().GetColorAt(point)
+			} else {
+				// Default white if no color mask is set
+				(*p.pixelMap.pixels)[i].color = Color{255, 255, 255, 0}
+			}
 		} else {
 			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0, 0}
 		}
 	}
-
-	p.currentHue = math.Mod(p.currentHue+speed, MAX_HUE_VALUE)
 
 	if reversed {
 		// ensures that this value will not dip below 0

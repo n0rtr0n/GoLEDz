@@ -113,24 +113,29 @@ func main() {
 		log.Fatal("no patterns registered")
 	}
 
-	// create controller with initial pattern
+	// Create default options
+	options := DefaultOptions()
+
+	// Create controller with initial pattern
 	controller := NewPixelController(
 		universes,
 		errorTracker,
 		config.TargetFramesPerSecond,
-		patterns["rainbowCircle"],
+		patterns["maskOnly"],
 		&pixelMap,
-		config.TransitionDuration,
+		*options,
 	)
 
 	// now register modes with server
 	modes := registerModes(&pixelMap, patterns)
 
-	// finally create server
-	server := NewLEDServer(controller, &pixelMap, patterns, modes, &ServerConfig{
-		TransitionDuration: config.TransitionDuration,
-		TransitionEnabled:  config.TransitionEnabled,
-	})
+	// Create server config
+	serverConfig := &ServerConfig{
+		Options: *options,
+	}
+
+	// Create server
+	server := NewLEDServer(controller, &pixelMap, patterns, modes, serverConfig)
 
 	// start the web server first
 	address := fmt.Sprintf("%v:%v", config.HostAddress, config.HostPort)

@@ -21,16 +21,17 @@ type LEDServer struct {
 	defaultTransition TransitionConfig
 	modes             map[string]PatternMode
 	colorMasks        map[string]ColorMaskPattern
+	options           Options
 }
 
 type ServerConfig struct {
-	TransitionDuration time.Duration
-	TransitionEnabled  bool
+	Options Options
 }
 
 type PatternsResponse struct {
 	Patterns   map[string]PatternInfo   `json:"patterns"`
 	ColorMasks map[string]ColorMaskInfo `json:"colorMasks"`
+	Options    Options                  `json:"options"`
 }
 
 type ColorMaskInfo struct {
@@ -46,8 +47,7 @@ type PatternInfo struct {
 func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[string]Pattern, modes map[string]PatternMode, config *ServerConfig) *LEDServer {
 	if config == nil {
 		config = &ServerConfig{
-			TransitionDuration: 2 * time.Second,
-			TransitionEnabled:  true,
+			Options: *DefaultOptions(),
 		}
 	}
 
@@ -58,10 +58,7 @@ func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[
 		modes:       modes,
 		colorMasks:  registerColorMasks(),
 		subscribers: make([]chan *PixelMap, 0),
-		defaultTransition: TransitionConfig{
-			Duration: config.TransitionDuration,
-			Enabled:  config.TransitionEnabled,
-		},
+		options:     config.Options,
 	}
 
 	if pattern, ok := patterns["spiral"]; ok {
@@ -100,6 +97,10 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 	// color mask management
 	mux.HandleFunc("PUT /colorMasks/{mask}", s.handleSetColorMask)
 	mux.HandleFunc("DELETE /colorMasks", s.handleDisableColorMask)
+
+	// Options endpoints
+	mux.HandleFunc("GET /options", s.handleGetOptions)
+	mux.HandleFunc("PUT /options/{option}", s.handleUpdateOption)
 
 	return mux
 }
@@ -205,25 +206,40 @@ func (s *LEDServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
-	patterns := make(map[string]PatternInfo)
+	response := struct {
+		Patterns   map[string]interface{} `json:"patterns"`
+		ColorMasks map[string]interface{} `json:"colorMasks"`
+		Options    Options                `json:"options"`
+	}{
+		Patterns:   make(map[string]interface{}),
+		ColorMasks: make(map[string]interface{}),
+		Options:    s.options,
+	}
+
+	// Add patterns to response
 	for name, pattern := range s.patterns {
-		patterns[name] = PatternInfo{
-			Label:      pattern.GetLabel(),
+		// Create a response that includes both the pattern update request and the label
+		patternResponse := struct {
+			Label      string               `json:"label"`
+			Parameters AdjustableParameters `json:"parameters"`
+		}{
+			Label:      pattern.GetLabel(), // Add the label
 			Parameters: pattern.GetPatternUpdateRequest().GetParameters(),
 		}
+		response.Patterns[name] = patternResponse
 	}
 
-	colorMasks := make(map[string]ColorMaskInfo)
+	// Add color masks to response
 	for name, mask := range s.colorMasks {
-		colorMasks[name] = ColorMaskInfo{
-			Label:      mask.GetLabel(),
+		// Create a response that includes both the mask update request and the label
+		maskResponse := struct {
+			Label      string               `json:"label"`
+			Parameters AdjustableParameters `json:"parameters"`
+		}{
+			Label:      mask.GetLabel(), // Add the label
 			Parameters: mask.GetPatternUpdateRequest().GetParameters(),
 		}
-	}
-
-	response := PatternsResponse{
-		Patterns:   patterns,
-		ColorMasks: colorMasks,
+		response.ColorMasks[name] = maskResponse
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -339,5 +355,81 @@ func (s *LEDServer) handleSetColorMask(w http.ResponseWriter, r *http.Request) {
 
 func (s *LEDServer) handleDisableColorMask(w http.ResponseWriter, r *http.Request) {
 	s.controller.SetColorMask(nil)
+	w.WriteHeader(http.StatusOK)
+}
+
+// Handler for GET /options
+func (s *LEDServer) handleGetOptions(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.options)
+}
+
+// Handler for PUT /options/{option}
+func (s *LEDServer) handleUpdateOption(w http.ResponseWriter, r *http.Request) {
+	optionID := r.PathValue("option")
+
+	// Parse the request body
+	var valueMap map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&valueMap); err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check if the value key exists
+	value, exists := valueMap["value"]
+	if !exists {
+		http.Error(w, "Request must include a 'value' field", http.StatusBadRequest)
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Update the option
+	if err := s.options.SetOption(optionID, value); err != nil {
+		if err == ErrOptionNotFound {
+			http.Error(w, "Unknown option: "+optionID, http.StatusBadRequest)
+		} else if err == ErrInvalidOptionValue {
+			http.Error(w, "Invalid value type for option: "+optionID, http.StatusBadRequest)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Update the controller with the new options
+	s.controller.UpdateOptions(s.options)
+
+	// Return the updated options
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.options)
+}
+
+func (s *LEDServer) handleUpdateOptions(w http.ResponseWriter, r *http.Request) {
+	var options Options
+	if err := json.NewDecoder(r.Body).Decode(&options); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Update options in the server config
+	s.options = options
+
+	// Update controller options
+	s.controller.UpdateOptions(options)
+
+	// Handle mode change if needed
+	if options.ActiveMode != "" {
+		if mode, exists := s.modes[options.ActiveMode]; exists {
+			s.controller.SetMode(mode)
+		} else if options.ActiveMode == "none" {
+			// Special case to disable any active mode
+			s.controller.SetMode(nil)
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 }

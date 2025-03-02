@@ -82,13 +82,8 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		BasePattern: BasePattern{
 			Label: "Sparkle",
 		},
-		pixelMap: pixelMap,
-		Parameters: SparkleParameters{
-			Color: ColorParameter{
-				Value: Color{R: 255, G: 0, B: 0},
-				Type:  TYPE_COLOR,
-			},
-		},
+		pixelMap:   pixelMap,
+		Parameters: SparkleParameters{},
 	}
 	spiralPattern := SpiralPattern{
 		BasePattern: BasePattern{
@@ -184,13 +179,13 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 		},
 	}
 
-	// Create and register the random pattern
+	// create and register the random pattern
 	randomPattern := RandomPattern{
 		BasePattern: BasePattern{
 			Label: "Random",
 		},
 		pixelMap: pixelMap,
-		patterns: patterns, // This will be empty initially, we'll fix it below
+		patterns: patterns, // this will be empty initially, we'll fix it below
 		Parameters: RandomPatternParameters{
 			SwitchInterval: FloatParameter{
 				Min:   floatPointer(1.0),
@@ -228,10 +223,4 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 	patterns[randomPattern.GetName()] = &randomPattern
 
 	return patterns
-}
-
-func registerModes(pixelMap *PixelMap, patterns map[string]Pattern) map[string]PatternMode {
-	modes := make(map[string]PatternMode)
-	// You can keep other modes if needed, but remove the random mode
-	return modes
 }

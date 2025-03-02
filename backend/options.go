@@ -11,6 +11,7 @@ type OptionType string
 const (
 	OPTION_DURATION OptionType = "duration"
 	OPTION_BOOLEAN  OptionType = "boolean"
+	OPTION_FLOAT    OptionType = "float"
 	// Add more types as needed
 )
 
@@ -87,6 +88,39 @@ func (o *BooleanOption) SetValue(value interface{}) error {
 	return ErrInvalidOptionValue
 }
 
+// FloatOption represents a floating point setting
+type FloatOption struct {
+	ID    string  `json:"id"`
+	Label string  `json:"label"`
+	Value float64 `json:"value"`
+	Min   float64 `json:"min"`
+	Max   float64 `json:"max"`
+}
+
+func (o *FloatOption) GetID() string {
+	return o.ID
+}
+
+func (o *FloatOption) GetLabel() string {
+	return o.Label
+}
+
+func (o *FloatOption) GetType() OptionType {
+	return OPTION_FLOAT
+}
+
+func (o *FloatOption) GetValue() interface{} {
+	return o.Value
+}
+
+func (o *FloatOption) SetValue(value interface{}) error {
+	if val, ok := value.(float64); ok {
+		o.Value = val
+		return nil
+	}
+	return ErrInvalidOptionValue
+}
+
 // Options holds all configurable settings
 type Options struct {
 	options            map[string]Option
@@ -101,8 +135,8 @@ type RegisteredOption struct {
 	Label string      `json:"label"`
 	Type  OptionType  `json:"type"`
 	Value interface{} `json:"value"`
-	Min   *int        `json:"min,omitempty"`
-	Max   *int        `json:"max,omitempty"`
+	Min   *float64    `json:"min,omitempty"`
+	Max   *float64    `json:"max,omitempty"`
 }
 
 // Errors
@@ -125,8 +159,16 @@ func (o Options) MarshalJSON() ([]byte, error) {
 
 		// Add min/max for duration options
 		if durationOpt, ok := option.(*DurationOption); ok {
-			min := durationOpt.Min
-			max := durationOpt.Max
+			min := float64(durationOpt.Min)
+			max := float64(durationOpt.Max)
+			regOption.Min = &min
+			regOption.Max = &max
+		}
+
+		// Add min/max for float options
+		if floatOpt, ok := option.(*FloatOption); ok {
+			min := floatOpt.Min
+			max := floatOpt.Max
 			regOption.Min = &min
 			regOption.Max = &max
 		}
@@ -192,6 +234,14 @@ func DefaultOptions() *Options {
 		ID:    "colorMaskTransitionEnabled",
 		Label: "Color Mask Transition Enabled",
 		Value: true,
+	}
+
+	options.options["brightness"] = &FloatOption{
+		ID:    "brightness",
+		Label: "Brightness",
+		Value: 100.0,
+		Min:   0.0,
+		Max:   100.0,
 	}
 
 	return options

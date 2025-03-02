@@ -126,16 +126,13 @@ func main() {
 		*options,
 	)
 
-	// now register modes with server
-	modes := registerModes(&pixelMap, patterns)
-
 	// Create server config
 	serverConfig := &ServerConfig{
 		Options: *options,
 	}
 
 	// Create server
-	server := NewLEDServer(controller, &pixelMap, patterns, modes, serverConfig)
+	server := NewLEDServer(controller, &pixelMap, patterns, serverConfig)
 
 	// start the web server first
 	address := fmt.Sprintf("%v:%v", config.HostAddress, config.HostPort)

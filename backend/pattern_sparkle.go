@@ -10,7 +10,7 @@ import (
 const MAX_SPARKLE_TTL = 80
 const MAX_SPARKLES = 1000
 const MAX_SPARKLE_SPEED = 2.0
-const SPARKLE_STARTING_SIZE = 25.0
+const SPARKLE_STARTING_SIZE = 30.0
 const SPARKLE_CHANCE_TO_CREATE = 80.0
 const SPARKLE_DEFAULT_ROTATION = 45.0 // 45 degree angle, slightly rotated box
 
@@ -37,22 +37,19 @@ type SparklePattern struct {
 }
 
 func (p *SparklePattern) UpdateParameters(parameters AdjustableParameters) error {
-	newParams, ok := parameters.(SparkleParameters)
+	_, ok := parameters.(SparkleParameters)
 	if !ok {
 		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
 		return errors.New(err)
 	}
 
-	p.Parameters.Color.Update(newParams.Color.Value)
 	return nil
 }
 
 type SparkleParameters struct {
-	Color ColorParameter `json:"color"`
 }
 
 func (p *SparklePattern) Update() {
-	color := p.Parameters.Color.Value
 
 	if len(p.sparkles) < MAX_SPARKLES {
 		if randomChancePercent(SPARKLE_CHANCE_TO_CREATE) {
@@ -99,11 +96,10 @@ func (p *SparklePattern) Update() {
 	for i, pixel := range *p.pixelMap.pixels {
 		point := Point{pixel.x, pixel.y}
 		if pointIsBetweenAnySparkle(point, p.sparkles) {
-			if p.GetColorMask() != nil {
-				(*p.pixelMap.pixels)[i].color = p.GetColorMask().GetColorAt(point)
-			} else {
-				(*p.pixelMap.pixels)[i].color = color
+			if p.GetColorMask() == nil {
+				return
 			}
+			(*p.pixelMap.pixels)[i].color = p.GetColorMask().GetColorAt(point)
 		} else {
 			(*p.pixelMap.pixels)[i].color = Color{0, 0, 0, 0}
 		}

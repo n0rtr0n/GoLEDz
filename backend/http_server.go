@@ -19,7 +19,6 @@ type LEDServer struct {
 	mu                sync.RWMutex
 	pixelMap          *PixelMap
 	defaultTransition TransitionConfig
-	modes             map[string]PatternMode
 	colorMasks        map[string]ColorMaskPattern
 	options           Options
 }
@@ -44,7 +43,7 @@ type PatternInfo struct {
 	Parameters AdjustableParameters `json:"parameters"`
 }
 
-func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[string]Pattern, modes map[string]PatternMode, config *ServerConfig) *LEDServer {
+func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[string]Pattern, config *ServerConfig) *LEDServer {
 	if config == nil {
 		config = &ServerConfig{
 			Options: *DefaultOptions(),
@@ -55,7 +54,6 @@ func NewLEDServer(controller *PixelController, pixelMap *PixelMap, patterns map[
 		controller:  controller,
 		pixelMap:    pixelMap,
 		patterns:    patterns,
-		modes:       modes,
 		colorMasks:  registerColorMasks(),
 		subscribers: make([]chan *PixelMap, 0),
 		options:     config.Options,
@@ -89,10 +87,6 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 
 	// transition config
 	mux.HandleFunc("PUT /transition", s.handleUpdateTransition)
-
-	// mode management
-	mux.HandleFunc("PUT /modes/{mode}", s.handleSetMode)
-	mux.HandleFunc("DELETE /modes/current", s.handleDisableMode)
 
 	// color mask management
 	mux.HandleFunc("PUT /colorMasks/{mask}", s.handleSetColorMask)
@@ -255,12 +249,6 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// disable any active mode before setting pattern
-	if s.controller.currentMode != nil {
-		s.controller.currentMode.Stop()
-		s.controller.currentMode = nil
-	}
-
 	// handles parameter updates without transition
 	if err := s.controller.UpdatePattern(patternName, parameters); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -289,40 +277,6 @@ func (s *LEDServer) handleUpdateTransition(w http.ResponseWriter, r *http.Reques
 
 	s.controller.SetTransitionDuration(duration)
 
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *LEDServer) handleSetMode(w http.ResponseWriter, r *http.Request) {
-	modeName := r.PathValue("mode")
-
-	mode, exists := s.modes[modeName]
-	if !exists {
-		http.Error(w, "Mode not found", http.StatusNotFound)
-		return
-	}
-
-	// only try to decode parameters if there's a request body
-	if r.ContentLength > 0 {
-		parameters := mode.GetPatternUpdateRequest()
-		if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := mode.UpdateParameters(parameters.GetParameters()); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	s.controller.SetPattern(mode)
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *LEDServer) handleDisableMode(w http.ResponseWriter, r *http.Request) {
-	if s.controller.currentMode != nil {
-		s.controller.currentMode.Stop()
-		s.controller.currentMode = nil
-	}
 	w.WriteHeader(http.StatusOK)
 }
 

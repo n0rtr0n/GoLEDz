@@ -66,8 +66,8 @@ func buildMammothSegment(universe uint16, startingChannelPosition uint16, xStart
 	xPos := xStart
 	yPos := yStart
 	channelPosition := startingChannelPosition
-	bigPixelsSpacing := int16(10)
-	smallPixelsSpacing := int16(11)
+	bigPixelsSpacing := int16(12)
+	smallPixelsSpacing := int16(13)
 	bigPixelsAlongEachSide := int16(7)
 	smallPixelsAlongEachSide := int16(6)
 
@@ -115,7 +115,7 @@ func buildMammothSegment(universe uint16, startingChannelPosition uint16, xStart
 	}
 
 	// start the snake over but with y += big pixel spacing
-	xTranslated, yTranslated = rotate(0, bigPixelsSpacing, rotationDegrees)
+	xTranslated, yTranslated = rotate(bigPixelsSpacing/4, bigPixelsSpacing, rotationDegrees)
 	xPos = xStart + xTranslated
 	yPos = yStart + yTranslated
 

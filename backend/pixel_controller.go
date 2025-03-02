@@ -17,7 +17,6 @@ type PixelController struct {
 	running          bool
 	stopChan         chan struct{}
 	wg               sync.WaitGroup
-	currentMode      PatternMode
 	currentPattern   Pattern
 	patternMu        sync.RWMutex
 	onUpdate         func(*PixelMap)
@@ -115,7 +114,7 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 		bytes[i] = 0
 	}
 
-	// now write the pixel data
+	// now write the pixel data (no brightness adjustment here, it's already done)
 	for _, pixel := range pc.pixelsByUniverse[universe] {
 		// calculate the actual DMX position based on channel position and pixel type
 		channelsPerPixel := int(pixel.pixelType) // 3 for RGB, 4 for RGBW
@@ -126,6 +125,7 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 			// map the color values according to the pixel's color order
 			var colorValues [4]byte
 
+			// Use the already-adjusted color values
 			colorValues[0] = byte(pixel.color.R)
 			colorValues[1] = byte(pixel.color.G)
 			colorValues[2] = byte(pixel.color.B)
@@ -230,18 +230,6 @@ func (pc *PixelController) Stop() {
 
 func (pc *PixelController) SetPattern(pattern interface{}) error {
 	switch p := pattern.(type) {
-	case PatternMode:
-		if pc.currentMode != nil {
-			pc.currentMode.Stop()
-		}
-		pc.currentMode = p
-		p.SetController(pc)
-		if pattern := p.GetCurrentPattern(); pattern != nil {
-			pc.currentPattern = pattern
-		}
-		p.Start()
-		return nil
-
 	case Pattern:
 		if pc.isParameterUpdate {
 			// set color mask before updating pattern
@@ -428,11 +416,6 @@ func (pc *PixelController) Update() {
 				pc.currentPattern.SetColorMask(pc.currentColorMask)
 			}
 			pc.transition = nil
-			if pc.currentMode != nil {
-				if mode, ok := pc.currentMode.(*RandomMode); ok {
-					mode.TransitionComplete()
-				}
-			}
 		}
 		return
 	}
@@ -446,10 +429,37 @@ func (pc *PixelController) Update() {
 	}
 
 	// normal pattern update
-	if pc.currentMode != nil {
-		pc.currentMode.Update()
-	} else if pc.currentPattern != nil {
+	if pc.currentPattern != nil {
 		pc.currentPattern.Update()
+	}
+
+	// After all pattern updates are done, apply brightness scaling to the pixel map
+	pc.applyBrightnessToPixelMap()
+}
+
+func (pc *PixelController) applyBrightnessToPixelMap() {
+	// Get brightness option
+	brightnessOpt, err := pc.options.GetOption("brightness")
+	var brightnessScale float64 = 1.0
+	if err == nil {
+		brightnessScale = brightnessOpt.GetValue().(float64) / 100.0
+	}
+
+	// Store original colors in a local variable for this function
+	originalColors := make([]Color, len(*pc.pixelMap.pixels))
+	for i, pixel := range *pc.pixelMap.pixels {
+		originalColors[i] = pixel.color
+	}
+
+	// Apply brightness to each pixel
+	for i := range *pc.pixelMap.pixels {
+		originalColor := originalColors[i]
+		(*pc.pixelMap.pixels)[i].color = Color{
+			R: colorPigment(float64(originalColor.R) * brightnessScale),
+			G: colorPigment(float64(originalColor.G) * brightnessScale),
+			B: colorPigment(float64(originalColor.B) * brightnessScale),
+			W: colorPigment(float64(originalColor.W) * brightnessScale),
+		}
 	}
 }
 
@@ -523,23 +533,6 @@ func (b *blendedColorMask) TransitionFrom(source Pattern, progress float64) {
 	// no transition needed for this temporary mask
 }
 
-func (pc *PixelController) SetMode(mode PatternMode) {
-	pc.patternMu.Lock()
-	defer pc.patternMu.Unlock()
-
-	pc.transition = nil
-	pc.currentMode = mode
-
-	// if mode is nil, ensure we have a pattern active
-	if mode == nil && pc.currentPattern == nil {
-		for _, pattern := range pc.patterns {
-			pc.currentPattern = pattern
-			break
-		}
-	}
-}
-
-// update the UpdateOptions method to handle mode changes
 func (pc *PixelController) UpdateOptions(options Options) {
 	pc.patternMu.Lock()
 	pc.options = options

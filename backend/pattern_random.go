@@ -95,7 +95,7 @@ func (p *RandomPattern) startTransition() {
 
 func (p *RandomPattern) selectRandomPattern() {
 	var patternNames []string
-	for name, _ := range p.patterns {
+	for name := range p.patterns {
 		if name != "random" && name != "lightsOff" && (p.currentPattern == nil || name != p.currentPattern.GetName()) {
 			patternNames = append(patternNames, name)
 		}

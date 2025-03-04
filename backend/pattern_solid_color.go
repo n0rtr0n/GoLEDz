@@ -27,8 +27,20 @@ func (p *SolidColorPattern) UpdateParameters(parameters AdjustableParameters) er
 }
 
 func (p *SolidColorPattern) Update() {
+	// Get the color from parameters
+	color := p.Parameters.Color.Value
+
+	// Create a new color with W explicitly set to 0
+	safeColor := Color{
+		R: color.R,
+		G: color.G,
+		B: color.B,
+		W: 0, // Always force W to 0
+	}
+
+	// Apply to all pixels
 	for i := range *p.pixelMap.pixels {
-		(*p.pixelMap.pixels)[i].color = p.Parameters.Color.Value
+		(*p.pixelMap.pixels)[i].color = safeColor
 	}
 }
 

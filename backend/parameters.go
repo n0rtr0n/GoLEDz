@@ -64,6 +64,10 @@ func (p *ColorParameter) Update(value interface{}) error {
 	if newValue.B < MIN_PIGMENT_VALUE || newValue.B > MAX_PIGMENT_VALUE {
 		return errors.New("blue color pigment provided to ColorParameter is invalid")
 	}
+
+	// Always ensure W is 0
+	newValue.W = 0
+
 	p.Value = newValue
 	return nil
 }

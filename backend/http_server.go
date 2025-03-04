@@ -239,21 +239,80 @@ func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {
-	patternName := r.PathValue("pattern")
+// Add this helper function to ensure W is always 0 in color values
+func ensureZeroW(data map[string]interface{}) {
+	// Check for direct color values
+	if colorValue, ok := data["value"].(map[string]interface{}); ok {
+		colorValue["w"] = 0
+	}
 
-	// get the current pattern's update request structure
-	parameters := s.controller.patterns[patternName].GetPatternUpdateRequest()
-	if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
+	// Check for parameters that might contain colors
+	if params, ok := data["parameters"].(map[string]interface{}); ok {
+		// Check common color parameter names
+		for _, colorKey := range []string{"color", "color1", "color2", "backgroundColor", "foregroundColor"} {
+			if colorParam, ok := params[colorKey].(map[string]interface{}); ok {
+				if colorValue, ok := colorParam["value"].(map[string]interface{}); ok {
+					colorValue["w"] = 0
+				}
+			}
+		}
+	}
+}
+
+func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {
+	// Extract pattern name from URL path
+	pathParts := r.URL.Path
+	patternName := pathParts[len("/patterns/"):]
+
+	// Parse request body
+	var requestData map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// handles parameter updates without transition
-	if err := s.controller.UpdatePattern(patternName, parameters); err != nil {
+	// Process the request to ensure W is 0 in all color values
+	if params, ok := requestData["parameters"].(map[string]interface{}); ok {
+		// Process all possible color parameters
+		for _, colorKey := range []string{"color", "color1", "color2", "backgroundColor", "foregroundColor"} {
+			if colorParam, ok := params[colorKey].(map[string]interface{}); ok {
+				if colorValue, ok := colorParam["value"].(map[string]interface{}); ok {
+					// Explicitly set W to 0
+					colorValue["w"] = float64(0) // Use float64 for JSON number compatibility
+				}
+			}
+		}
+	}
+
+	// Check if we have a pattern update request
+	pattern, exists := s.controller.patterns[patternName]
+	if !exists {
+		http.Error(w, fmt.Sprintf("Pattern %s not found", patternName), http.StatusNotFound)
+		return
+	}
+
+	// Create a new pattern update request
+	updateRequest := pattern.GetPatternUpdateRequest()
+
+	// Convert the processed request data back to JSON
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Unmarshal into the pattern-specific update request
+	if err := json.Unmarshal(jsonData, updateRequest); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Update the pattern
+	if err := s.controller.UpdatePattern(patternName, updateRequest); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 

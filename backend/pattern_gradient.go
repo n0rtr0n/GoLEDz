@@ -43,7 +43,13 @@ func (p *GradientPattern) Update() {
 	reversed := p.Parameters.Reversed.Value
 
 	for i, pixel := range *p.pixelMap.pixels {
-		(*p.pixelMap.pixels)[i].color = GetColorAtPoint(Point{pixel.x, pixel.y}, color1, color2, p.currentAngle)
+		calculatedColor := GetColorAtPoint(Point{pixel.x, pixel.y}, color1, color2, p.currentAngle)
+		(*p.pixelMap.pixels)[i].color = Color{
+			R: calculatedColor.R,
+			G: calculatedColor.G,
+			B: calculatedColor.B,
+			W: 0,
+		}
 	}
 	if reversed {
 		p.currentAngle += speed
@@ -111,11 +117,50 @@ func GetColorAtPoint(p Point, color1 Color, color2 Color, angleDegrees float64) 
 	t := (projection - minProjection) / (maxProjection - minProjection)
 	t = math.Max(0, math.Min(1, t))
 
-	// interpolate between the two colors
+	// Convert RGB to HSV for better interpolation
+	r1, g1, b1 := float64(color1.R)/255.0, float64(color1.G)/255.0, float64(color1.B)/255.0
+	r2, g2, b2 := float64(color2.R)/255.0, float64(color2.G)/255.0, float64(color2.B)/255.0
+
+	h1, s1, v1 := RGBtoHSV(r1, g1, b1)
+	h2, s2, v2 := RGBtoHSV(r2, g2, b2)
+
+	// Boost saturation - make colors more vibrant
+	s1 = math.Min(1.0, s1*1.5) // Boost by 50%
+	s2 = math.Min(1.0, s2*1.5) // Boost by 50%
+
+	// Handle hue wrapping for shortest path
+	if h2-h1 > 180 {
+		h1 += 360
+	} else if h1-h2 > 180 {
+		h2 += 360
+	}
+
+	// Interpolate in HSV space
+	hBlended := h1*(1-t) + h2*t
+	if hBlended >= 360 {
+		hBlended -= 360
+	}
+
+	// Use non-linear blending for saturation to prevent washed-out colors
+	sBlended := math.Sqrt(s1*s1*(1-t) + s2*s2*t)
+
+	// Boost the final saturation again
+	sBlended = math.Min(1.0, sBlended*1.2)
+
+	// Use non-linear blending for value as well
+	vBlended := math.Sqrt(v1*v1*(1-t) + v2*v2*t)
+
+	// Convert back to RGB
+	rBlended, gBlended, bBlended := HSVtoRGB(hBlended, sBlended, vBlended)
+
+	// Apply gamma correction to make colors more vivid
+	gamma := 0.8 // Values less than 1.0 make colors more vivid
+
 	return Color{
-		R: colorPigment(float64(color1.R)*(1-t) + float64(color2.R)*t),
-		G: colorPigment(float64(color1.G)*(1-t) + float64(color2.G)*t),
-		B: colorPigment(float64(color1.B)*(1-t) + float64(color2.B)*t),
+		R: colorPigment(math.Pow(rBlended, gamma) * 255),
+		G: colorPigment(math.Pow(gBlended, gamma) * 255),
+		B: colorPigment(math.Pow(bBlended, gamma) * 255),
+		W: 0,
 	}
 }
 

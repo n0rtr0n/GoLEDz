@@ -244,6 +244,14 @@ func DefaultOptions() *Options {
 		Max:   100.0,
 	}
 
+	options.options["gamma"] = &FloatOption{
+		ID:    "gamma",
+		Label: "Gamma Correction",
+		Value: 1.0, // Default is 1.0 (no correction)
+		Min:   0.2, // Lower values make colors more vivid
+		Max:   3.0, // Higher values make colors more muted
+	}
+
 	return options
 }
 

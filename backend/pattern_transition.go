@@ -54,9 +54,17 @@ func DefaultTransitionFromPattern(target Pattern, source Pattern, progress float
 }
 
 func blendColors(c1, c2 Color, progress float64) Color {
+	// Ensure progress is between 0 and 1
+	if progress < 0 {
+		progress = 0
+	} else if progress > 1 {
+		progress = 1
+	}
+
 	return Color{
 		R: colorPigment(float64(c1.R)*(1-progress) + float64(c2.R)*progress),
 		G: colorPigment(float64(c1.G)*(1-progress) + float64(c2.G)*progress),
 		B: colorPigment(float64(c1.B)*(1-progress) + float64(c2.B)*progress),
+		W: 0, // Always set W to 0
 	}
 }

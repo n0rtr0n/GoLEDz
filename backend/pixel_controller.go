@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"sync"
 	"time"
 )
@@ -114,7 +115,7 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 		bytes[i] = 0
 	}
 
-	// now write the pixel data (no brightness adjustment here, it's already done)
+	// now write the pixel data
 	for _, pixel := range pc.pixelsByUniverse[universe] {
 		// calculate the actual DMX position based on channel position and pixel type
 		channelsPerPixel := int(pixel.pixelType) // 3 for RGB, 4 for RGBW
@@ -125,12 +126,12 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 			// map the color values according to the pixel's color order
 			var colorValues [4]byte
 
-			// Use the already-adjusted color values
+			// Use the already-adjusted color values, but force W to 0
 			colorValues[0] = byte(pixel.color.R)
 			colorValues[1] = byte(pixel.color.G)
 			colorValues[2] = byte(pixel.color.B)
 			if pixel.pixelType == PixelRGBW {
-				colorValues[3] = byte(pixel.color.W)
+				colorValues[3] = 0 // Always force W to 0
 			}
 
 			switch pixel.colorOrder {
@@ -166,6 +167,7 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 			}
 		}
 	}
+
 	return bytes
 }
 
@@ -368,22 +370,44 @@ func (pc *PixelController) Update() {
 	// handle active transition
 	if pc.transition != nil && !pc.isParameterUpdate {
 		elapsed := time.Since(pc.transition.startTime)
-		progress := float64(elapsed) / float64(pc.transition.duration)
+
+		// Calculate raw progress
+		rawProgress := float64(elapsed) / float64(pc.transition.duration)
+
+		// Use a smoothed progress that extends slightly beyond 1.0 before completing
+		// This allows the source pattern to fade out more gradually
+		smoothedProgress := rawProgress
+
+		// Only mark the transition as complete when we're well past 100%
+		transitionComplete := false
+
+		if rawProgress >= 1.0 {
+			if rawProgress >= 1.1 { // Give 10% extra time for smooth completion
+				transitionComplete = true
+			} else {
+				// Ease out the final part of the transition (1.0-1.1)
+				// This makes the last 10% of the transition smoother
+				smoothedProgress = 1.0 - 0.5*math.Pow(1.1-rawProgress, 2)
+				if smoothedProgress > 0.999 {
+					smoothedProgress = 0.999 // Keep it just under 1.0 to maintain blending
+				}
+			}
+		}
 
 		// check if this is a color mask transition
 		if pc.transition.sourcePattern == pc.transition.targetPattern &&
 			pc.transition.sourceMask != nil && pc.transition.targetMask != nil {
 
+			// Make sure both masks are updated first
+			pc.transition.sourceMask.Update()
+			pc.transition.targetMask.Update()
+
 			// create a custom blended color mask for this frame
 			blendedMask := &blendedColorMask{
 				sourceMask: pc.transition.sourceMask,
 				targetMask: pc.transition.targetMask,
-				progress:   progress,
+				progress:   smoothedProgress,
 			}
-
-			// update both source and target masks
-			pc.transition.sourceMask.Update()
-			pc.transition.targetMask.Update()
 
 			// apply the blended mask to the pattern
 			pc.currentPattern.SetColorMask(blendedMask)
@@ -403,13 +427,13 @@ func (pc *PixelController) Update() {
 				DefaultTransitionFromPattern(
 					pc.transition.targetPattern,
 					pc.transition.sourcePattern,
-					progress,
+					smoothedProgress,
 					pc.pixelMap,
 				)
 			}
 		}
 
-		if progress >= 1.0 {
+		if transitionComplete {
 			pc.currentPattern = pc.transition.targetPattern
 			if pc.transition.targetMask != nil {
 				pc.currentColorMask = pc.transition.targetMask
@@ -445,20 +469,41 @@ func (pc *PixelController) applyBrightnessToPixelMap() {
 		brightnessScale = brightnessOpt.GetValue().(float64) / 100.0
 	}
 
+	// Get gamma correction option
+	gammaOpt, err := pc.options.GetOption("gamma")
+	var gamma float64 = 1.0
+	if err == nil {
+		gamma = gammaOpt.GetValue().(float64)
+	}
+
 	// Store original colors in a local variable for this function
 	originalColors := make([]Color, len(*pc.pixelMap.pixels))
 	for i, pixel := range *pc.pixelMap.pixels {
 		originalColors[i] = pixel.color
 	}
 
-	// Apply brightness to each pixel
+	// Apply brightness and gamma to each pixel
 	for i := range *pc.pixelMap.pixels {
 		originalColor := originalColors[i]
+
+		// First apply brightness
+		r := float64(originalColor.R) * brightnessScale
+		g := float64(originalColor.G) * brightnessScale
+		b := float64(originalColor.B) * brightnessScale
+
+		// Then apply gamma correction
+		if gamma != 1.0 {
+			// Normalize to 0-1 range
+			r = math.Pow(r/255.0, 1.0/gamma) * 255.0
+			g = math.Pow(g/255.0, 1.0/gamma) * 255.0
+			b = math.Pow(b/255.0, 1.0/gamma) * 255.0
+		}
+
 		(*pc.pixelMap.pixels)[i].color = Color{
-			R: colorPigment(float64(originalColor.R) * brightnessScale),
-			G: colorPigment(float64(originalColor.G) * brightnessScale),
-			B: colorPigment(float64(originalColor.B) * brightnessScale),
-			W: colorPigment(float64(originalColor.W) * brightnessScale),
+			R: colorPigment(r),
+			G: colorPigment(g),
+			B: colorPigment(b),
+			W: 0, // Always set W to 0
 		}
 	}
 }
@@ -506,15 +551,104 @@ type blendedColorMask struct {
 }
 
 func (b *blendedColorMask) GetColorAt(point Point) Color {
+	// Get colors from both masks
 	sourceColor := b.sourceMask.GetColorAt(point)
 	targetColor := b.targetMask.GetColorAt(point)
 
-	// blend the colors based on transition progress
-	return blendColors(sourceColor, targetColor, b.progress)
+	// Apply easing function to progress for smoother transitions
+	// This creates a more natural acceleration/deceleration curve
+	easedProgress := b.progress
+	if b.progress < 0.5 {
+		// Ease in (slow start)
+		easedProgress = 2.0 * b.progress * b.progress
+	} else {
+		// Ease out (slow end)
+		easedProgress = 1.0 - math.Pow(-2.0*b.progress+2.0, 2)/2.0
+	}
+
+	// For very low or very high progress values, just return the appropriate color
+	// This prevents artifacts at the beginning and end of transitions
+	if easedProgress < 0.01 {
+		return Color{
+			R: sourceColor.R,
+			G: sourceColor.G,
+			B: sourceColor.B,
+			W: 0, // Always set W to 0
+		}
+	}
+	if easedProgress > 0.99 {
+		return Color{
+			R: targetColor.R,
+			G: targetColor.G,
+			B: targetColor.B,
+			W: 0, // Always set W to 0
+		}
+	}
+
+	// Convert RGB to HSV for better blending
+	sourceR, sourceG, sourceB := float64(sourceColor.R)/255.0, float64(sourceColor.G)/255.0, float64(sourceColor.B)/255.0
+	targetR, targetG, targetB := float64(targetColor.R)/255.0, float64(targetColor.G)/255.0, float64(targetColor.B)/255.0
+
+	// Skip HSV conversion for black or white colors to prevent artifacts
+	if (sourceR < 0.01 && sourceG < 0.01 && sourceB < 0.01) ||
+		(targetR < 0.01 && targetG < 0.01 && targetB < 0.01) {
+		// For black, do direct RGB blending
+		return Color{
+			R: colorPigment(float64(sourceColor.R)*(1-easedProgress) + float64(targetColor.R)*easedProgress),
+			G: colorPigment(float64(sourceColor.G)*(1-easedProgress) + float64(targetColor.G)*easedProgress),
+			B: colorPigment(float64(sourceColor.B)*(1-easedProgress) + float64(targetColor.B)*easedProgress),
+			W: 0, // Always set W to 0
+		}
+	}
+
+	// Convert to HSV
+	sourceH, sourceS, sourceV := RGBtoHSV(sourceR, sourceG, sourceB)
+	targetH, targetS, targetV := RGBtoHSV(targetR, targetG, targetB)
+
+	// Special case for colors with very low saturation (near white/gray/black)
+	// Use the hue of the more saturated color
+	if sourceS < 0.1 && targetS > 0.1 {
+		sourceH = targetH
+	} else if targetS < 0.1 && sourceS > 0.1 {
+		targetH = sourceH
+	}
+
+	// Handle hue wrapping for shortest path
+	if targetH-sourceH > 180 {
+		sourceH += 360
+	} else if sourceH-targetH > 180 {
+		targetH += 360
+	}
+
+	// Interpolate in HSV space
+	blendedH := sourceH*(1-easedProgress) + targetH*easedProgress
+	if blendedH >= 360 {
+		blendedH -= 360
+	}
+
+	// Use a non-linear blend for saturation to prevent washed-out colors
+	// This gives more weight to the higher saturation
+	blendedS := math.Sqrt(sourceS*sourceS*(1-easedProgress) + targetS*targetS*easedProgress)
+
+	// Use a non-linear blend for value as well
+	blendedV := math.Sqrt(sourceV*sourceV*(1-easedProgress) + targetV*targetV*easedProgress)
+
+	// Convert back to RGB
+	blendedR, blendedG, blendedB := HSVtoRGB(blendedH, blendedS, blendedV)
+
+	// Create final color
+	return Color{
+		R: colorPigment(blendedR * 255),
+		G: colorPigment(blendedG * 255),
+		B: colorPigment(blendedB * 255),
+		W: 0, // Always set W to 0
+	}
 }
 
 func (b *blendedColorMask) Update() {
-	// both source and target masks are updated in the main Update method
+	// Both source and target masks should be updated separately
+	b.sourceMask.Update()
+	b.targetMask.Update()
 }
 
 func (b *blendedColorMask) GetName() string {

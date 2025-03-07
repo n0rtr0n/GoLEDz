@@ -1,0 +1,411 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"math"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+const MAX_DROPS = 5000
+
+type MatrixPattern struct {
+	BasePattern
+	pixelMap   *PixelMap
+	Parameters MatrixParameters `json:"parameters"`
+	Label      string           `json:"label,omitempty"`
+	drops      []matrixDrop
+	lastUpdate time.Time
+}
+
+type matrixDrop struct {
+	x        int16
+	y        int16
+	length   int
+	speed    float64
+	position float64
+	bright   float64
+}
+
+type MatrixParameters struct {
+	Speed      FloatParameter   `json:"speed"`
+	Density    FloatParameter   `json:"density"`
+	DropLength FloatParameter   `json:"dropLength"`
+	Color      ColorParameter   `json:"color"`
+	Reversed   BooleanParameter `json:"reversed"`
+}
+
+func (p *MatrixPattern) UpdateParameters(parameters AdjustableParameters) error {
+	newParams, ok := parameters.(MatrixParameters)
+	if !ok {
+		err := fmt.Sprintf("Could not cast updated parameters for %v pattern", p.GetName())
+		return errors.New(err)
+	}
+
+	p.Parameters.Speed.Update(newParams.Speed.Value)
+	p.Parameters.Density.Update(newParams.Density.Value)
+	p.Parameters.DropLength.Update(newParams.DropLength.Value)
+	p.Parameters.Color.Update(newParams.Color.Value)
+	p.Parameters.Reversed.Update(newParams.Reversed.Value)
+	return nil
+}
+
+func (p *MatrixPattern) Update() {
+	// Initialize if this is the first update
+	if p.lastUpdate.IsZero() {
+		p.lastUpdate = time.Now()
+		p.drops = make([]matrixDrop, 0)
+	}
+
+	// Calculate time delta
+	now := time.Now()
+	deltaTime := now.Sub(p.lastUpdate).Seconds()
+	p.lastUpdate = now
+
+	// Get parameters
+	speed := p.Parameters.Speed.Value
+	density := p.Parameters.Density.Value
+	dropLength := p.Parameters.DropLength.Value
+	color := p.Parameters.Color.Value
+	reversed := p.Parameters.Reversed.Value
+
+	// Find max X and Y values and build a pixel lookup map
+	maxX, maxY := int16(0), int16(0)
+	minX, minY := int16(9999), int16(9999)
+	pixelLookup := make(map[int16]map[int16]int)
+
+	for i, pixel := range *p.pixelMap.pixels {
+		// Track min/max coordinates
+		if pixel.x > maxX {
+			maxX = pixel.x
+		}
+		if pixel.y > maxY {
+			maxY = pixel.y
+		}
+		if pixel.x < minX {
+			minX = pixel.x
+		}
+		if pixel.y < minY {
+			minY = pixel.y
+		}
+
+		// Build lookup map for faster pixel access
+		if _, exists := pixelLookup[pixel.x]; !exists {
+			pixelLookup[pixel.x] = make(map[int16]int)
+		}
+		pixelLookup[pixel.x][pixel.y] = i
+	}
+
+	// Clear all pixels to black
+	for i := range *p.pixelMap.pixels {
+		(*p.pixelMap.pixels)[i].color = Color{R: 0, G: 0, B: 0, W: 0}
+	}
+
+	// Get all unique X coordinates
+	xCoords := make([]int16, 0)
+	for x := range pixelLookup {
+		xCoords = append(xCoords, x)
+	}
+
+	// Sort xCoords to ensure even distribution
+	sort.Slice(xCoords, func(i, j int) bool {
+		return xCoords[i] < xCoords[j]
+	})
+
+	// IMPORTANT: Periodically reset all drops to prevent glitches
+	// This is the key fix for the glitches you're seeing
+	if len(p.drops) > len(xCoords)*2 || len(p.drops) > MAX_DROPS {
+		// Too many drops, reset them all
+		p.drops = make([]matrixDrop, 0)
+	}
+
+	// Update existing drops - direction based on reversed parameter
+	var activeDrop []matrixDrop
+	for _, drop := range p.drops {
+		// Update position - direction based on reversed parameter
+		if reversed {
+			// Move upward if reversed
+			drop.position -= drop.speed * speed * deltaTime
+		} else {
+			// Move downward if not reversed
+			drop.position += drop.speed * speed * deltaTime
+		}
+
+		// Check if drop is still visible or needs to loop
+		if reversed {
+			// For reversed (upward) movement
+			if drop.position+float64(drop.length) > 0 {
+				// Drop is still visible
+				activeDrop = append(activeDrop, drop)
+			} else {
+				// Drop has moved off the top - loop it back to the bottom
+				drop.position = float64(maxY) + float64(drop.length)
+				drop.bright = 0.8 + rand.Float64()*0.2 // New random brightness
+				activeDrop = append(activeDrop, drop)
+			}
+		} else {
+			// For normal (downward) movement
+			if drop.position-float64(drop.length) < float64(maxY) {
+				// Drop is still visible
+				activeDrop = append(activeDrop, drop)
+			} else {
+				// Drop has moved off the bottom - loop it back to the top
+				drop.position = float64(minY)
+				drop.bright = 0.8 + rand.Float64()*0.2 // New random brightness
+				activeDrop = append(activeDrop, drop)
+			}
+		}
+	}
+	p.drops = activeDrop
+
+	// Ensure we have enough drops to cover the entire canvas
+	// Calculate how many drops we need based on the X range
+	xRange := maxX - minX
+	desiredDropCount := int(xRange / 10) // One drop every ~10 pixels
+
+	// Create a map to track which X coordinates already have drops
+	existingDropX := make(map[int16]bool)
+	for _, drop := range p.drops {
+		existingDropX[drop.x] = true
+	}
+
+	// Add drops if we don't have enough, focusing on X coordinates that don't have drops yet
+	if len(p.drops) < desiredDropCount {
+		// Add drops at X coordinates that don't have drops yet
+		for _, x := range xCoords {
+			if !existingDropX[x] && rand.Float64() < 0.5 { // 50% chance to add a drop at each available X
+				// Create a drop at this X coordinate
+				length := int(10 + rand.Float64()*dropLength)
+				// Start at a random Y position
+				startY := minY + int16(rand.Float64()*float64(maxY-minY))
+
+				// Set initial position based on direction
+				var initialPosition float64
+				if reversed {
+					initialPosition = float64(maxY) // Start at bottom if moving upward
+				} else {
+					initialPosition = float64(startY) // Start at random position if moving downward
+				}
+
+				p.drops = append(p.drops, matrixDrop{
+					x:        x,
+					length:   length,
+					speed:    20 + rand.Float64()*30,
+					position: initialPosition,
+					bright:   0.8 + rand.Float64()*0.2,
+				})
+
+				// Mark this X as having a drop
+				existingDropX[x] = true
+			}
+		}
+	}
+
+	// Add new random drops based on density, but only if we're not at the maximum
+	if len(p.drops) < len(xCoords)*2 {
+		dropChance := density * deltaTime * 5
+
+		// Add drops at random X coordinates
+		for i := 0; i < int(density*5); i++ {
+			if rand.Float64() < dropChance && len(xCoords) > 0 {
+				// Pick a random X coordinate that actually has pixels
+				x := xCoords[rand.Intn(len(xCoords))]
+
+				// Create a drop at this X coordinate
+				length := int(10 + rand.Float64()*dropLength)
+
+				// Set initial position based on direction
+				var initialPosition float64
+				if reversed {
+					initialPosition = float64(maxY) // Start at bottom if moving upward
+				} else {
+					initialPosition = float64(minY) // Start at top if moving downward
+				}
+
+				p.drops = append(p.drops, matrixDrop{
+					x:        x,
+					length:   length,
+					speed:    20 + rand.Float64()*30,
+					position: initialPosition,
+					bright:   0.8 + rand.Float64()*0.2,
+				})
+			}
+		}
+	}
+
+	// Draw all drops using the pixel lookup for efficiency
+	for _, drop := range p.drops {
+		// Skip drops with invalid X coordinates
+		if _, exists := pixelLookup[drop.x]; !exists {
+			continue
+		}
+
+		// Calculate the range of y positions for this drop
+		headY := int16(drop.position)
+
+		// Tail position depends on direction
+		var tailY int16
+		if reversed {
+			// For reversed (upward) movement, tail is above head
+			tailY = headY + int16(drop.length)
+		} else {
+			// For normal (downward) movement, tail is below head
+			tailY = headY - int16(drop.length)
+		}
+
+		// Determine the y range to iterate through
+		var startY, endY int16
+		var yStep int16 = 1
+
+		if reversed {
+			// For reversed (upward) movement, iterate from head to tail (bottom to top)
+			startY, endY = headY, tailY
+		} else {
+			// For normal (downward) movement, iterate from tail to head (top to bottom)
+			startY, endY = tailY, headY
+		}
+
+		// heck if this column exists in our lookup
+		if columnMap, exists := pixelLookup[drop.x]; exists {
+			// draw each segment of the drop where pixels exist
+			for y := startY; y <= endY; y += yStep {
+				// check if there's a pixel at this exact position
+				if pixelIdx, hasPixel := columnMap[y]; hasPixel {
+					// calculate brightness - head is brightest, tail fades out
+					var distFromHead float64
+					if reversed {
+						distFromHead = float64(y - headY) // distance increases as we go up
+					} else {
+						distFromHead = float64(headY - y) // distance increases as we go down
+					}
+					brightness := math.Max(0, 1.0-distFromHead/float64(drop.length)) * drop.bright
+
+					// apply color mask if available
+					if p.GetColorMask() != nil {
+						maskColor := p.GetColorMask().GetColorAt(Point{drop.x, y})
+						(*p.pixelMap.pixels)[pixelIdx].color = Color{
+							R: colorPigment(float64(maskColor.R) * brightness),
+							G: colorPigment(float64(maskColor.G) * brightness),
+							B: colorPigment(float64(maskColor.B) * brightness),
+							W: 0,
+						}
+					} else {
+						// Use the matrix color
+						(*p.pixelMap.pixels)[pixelIdx].color = Color{
+							R: colorPigment(float64(color.R) * brightness),
+							G: colorPigment(float64(color.G) * brightness),
+							B: colorPigment(float64(color.B) * brightness),
+							W: 0,
+						}
+					}
+				}
+
+				// also check nearby pixels (for wider drops)
+				for dx := int16(-2); dx <= 2; dx++ {
+					if dx == 0 {
+						continue // already handled the exact position
+					}
+
+					// check if there's a column at this offset
+					if nearbyColumn, hasColumn := pixelLookup[drop.x+dx]; hasColumn {
+						// check if there's a pixel at this y position
+						if pixelIdx, hasPixel := nearbyColumn[y]; hasPixel {
+							// calculate brightness - reduced by distance from center and distance from head
+							distFactor := 1.0 - math.Abs(float64(dx))/3.0 // fade by horizontal distance
+
+							var distFromHead float64
+							if reversed {
+								distFromHead = float64(y - headY) // Distance increases as we go up
+							} else {
+								distFromHead = float64(headY - y) // Distance increases as we go down
+							}
+
+							brightness := math.Max(0, 1.0-distFromHead/float64(drop.length)) * drop.bright * distFactor
+
+							// only draw if brightness is significant
+							if brightness > 0.1 {
+								// apply color mask if available
+								if p.GetColorMask() != nil {
+									maskColor := p.GetColorMask().GetColorAt(Point{drop.x + dx, y})
+									(*p.pixelMap.pixels)[pixelIdx].color = Color{
+										R: colorPigment(float64(maskColor.R) * brightness),
+										G: colorPigment(float64(maskColor.G) * brightness),
+										B: colorPigment(float64(maskColor.B) * brightness),
+										W: 0,
+									}
+								} else {
+									// use the matrix color
+									(*p.pixelMap.pixels)[pixelIdx].color = Color{
+										R: colorPigment(float64(color.R) * brightness),
+										G: colorPigment(float64(color.G) * brightness),
+										B: colorPigment(float64(color.B) * brightness),
+										W: 0,
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// add some random sparkles for extra effect
+	sparkleCount := int(density * 10)
+	for i := 0; i < sparkleCount; i++ {
+		if len(*p.pixelMap.pixels) > 0 {
+			idx := rand.Intn(len(*p.pixelMap.pixels))
+			brightness := 0.5 + rand.Float64()*0.5
+
+			// apply color mask if available
+			if p.GetColorMask() != nil {
+				pixel := (*p.pixelMap.pixels)[idx]
+				maskColor := p.GetColorMask().GetColorAt(Point{pixel.x, pixel.y})
+				(*p.pixelMap.pixels)[idx].color = Color{
+					R: colorPigment(float64(maskColor.R) * brightness),
+					G: colorPigment(float64(maskColor.G) * brightness),
+					B: colorPigment(float64(maskColor.B) * brightness),
+					W: 0,
+				}
+			} else {
+				// use the matrix color
+				(*p.pixelMap.pixels)[idx].color = Color{
+					R: colorPigment(float64(color.R) * brightness),
+					G: colorPigment(float64(color.G) * brightness),
+					B: colorPigment(float64(color.B) * brightness),
+					W: 0,
+				}
+			}
+		}
+	}
+
+	// update the color mask if we have one
+	if p.GetColorMask() != nil {
+		p.GetColorMask().Update()
+	}
+}
+
+func (p *MatrixPattern) GetName() str
+ing {
+	return "matrix"
+}
+
+type MatrixUpdateRequest struct {
+	Parameters MatrixParameters `json:"parameters"`
+}
+
+func (r *MatrixUpdateRequest) GetParameters() AdjustableParameters {
+	return r.Parameters
+}
+
+func (p *MatrixPattern) GetPatternUpdateRequest() PatternUpdateRequest {
+	return &MatrixUpdateRequest{
+		Parameters: p.Parameters,
+	}
+}
+
+func (p *MatrixPattern) TransitionFrom(source Pattern, progress float64) {
+	DefaultTransitionFromPattern(p, source, progress, p.pixelMap)
+}

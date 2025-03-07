@@ -15,7 +15,10 @@ type GradientColorMask struct {
 func (p *GradientColorMask) GetColorAt(point Point) Color {
 	color1 := p.Parameters.Color1.Value
 	color2 := p.Parameters.Color2.Value
-	calculatedColor := GetColorAtPoint(point, color1, color2, p.currentAngle)
+	blendSize := p.Parameters.BlendSize.Value
+
+	// Pass the blend size to the modified GetColorAtPoint function
+	calculatedColor := GetColorAtPointWithBlendSize(point, color1, color2, p.currentAngle, blendSize)
 
 	// The GetColorAtPoint function now handles saturation boosting
 	return Color{
@@ -69,5 +72,6 @@ func (p *GradientColorMask) UpdateParameters(parameters AdjustableParameters) er
 	p.Parameters.Color2.Update(newParams.Color2.Value)
 	p.Parameters.Speed.Update(newParams.Speed.Value)
 	p.Parameters.Reversed.Update(newParams.Reversed.Value)
+	p.Parameters.BlendSize.Update(newParams.BlendSize.Value)
 	return nil
 }

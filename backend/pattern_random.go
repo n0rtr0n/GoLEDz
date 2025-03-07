@@ -207,6 +207,11 @@ func (p *RandomPattern) TransitionFrom(source Pattern, progress float64) {
 func (p *RandomPattern) randomizeParameters(pattern Pattern) {
 	// use reflection to access the Parameters field of the pattern
 	patternValue := reflect.ValueOf(pattern).Elem()
+	patternType := patternValue.Type()
+	patternName := patternType.Name()
+
+	fmt.Printf("Randomizing parameters for %s\n", patternName)
+
 	paramsField := patternValue.FieldByName("Parameters")
 
 	if !paramsField.IsValid() {
@@ -214,18 +219,90 @@ func (p *RandomPattern) randomizeParameters(pattern Pattern) {
 		return
 	}
 
-	for i := range paramsField.NumField() {
+	for i := 0; i < paramsField.NumField(); i++ {
 		field := paramsField.Field(i)
 		fieldType := paramsField.Type().Field(i)
+		fieldName := fieldType.Name
 
+		// skip unexported fields
 		if !field.CanInterface() {
 			continue
 		}
 
-		if param, ok := field.Addr().Interface().(Parameter); ok {
-			param.Randomize()
-		} else {
-			fmt.Printf("  Field %s doesn't implement Parameter interface\n", fieldType.Name)
+		switch fieldValue := field.Addr().Interface().(type) {
+		case *FloatParameter:
+			if fieldValue.Min != nil {
+				oldValue := fieldValue.Value
+				min := *fieldValue.Min
+				max := fieldValue.Max
+				defaultValue := fieldValue.Value
+
+				// Calculate constrained min and max (halfway between default and actual min/max)
+				constrainedMin := min + (defaultValue-min)/2
+				constrainedMax := defaultValue + (max-defaultValue)/2
+
+				// Generate random value within constrained range
+				fieldValue.Value = constrainedMin + rand.Float64()*(constrainedMax-constrainedMin)
+
+				fmt.Printf("  %s.%s: %.2f -> %.2f (range: %.2f to %.2f, constrained: %.2f to %.2f)\n",
+					patternName, fieldName, oldValue, fieldValue.Value,
+					min, max, constrainedMin, constrainedMax)
+			}
+		case *IntParameter:
+			if fieldValue.Min != nil {
+				oldValue := fieldValue.Value
+				min := *fieldValue.Min
+				max := fieldValue.Max
+				defaultValue := fieldValue.Value
+
+				// Calculate constrained min and max (halfway between default and actual min/max)
+				constrainedMin := min + (defaultValue-min)/2
+				constrainedMax := defaultValue + (max-defaultValue)/2
+
+				// Generate random value within constrained range
+				fieldValue.Value = min + rand.Intn(max-min+1)
+
+				// Ensure the value is within the constrained range
+				if fieldValue.Value < int(constrainedMin) {
+					fieldValue.Value = int(constrainedMin)
+				} else if fieldValue.Value > int(constrainedMax) {
+					fieldValue.Value = int(constrainedMax)
+				}
+
+				fmt.Printf("  %s.%s: %d -> %d (range: %d to %d, constrained: %.1f to %.1f)\n",
+					patternName, fieldName, oldValue, fieldValue.Value,
+					min, max, constrainedMin, constrainedMax)
+			}
+		case *BooleanParameter:
+			oldValue := fieldValue.Value
+			fieldValue.Value = rand.Intn(2) == 1
+			fmt.Printf("  %s.%s: %v -> %v\n", patternName, fieldName, oldValue, fieldValue.Value)
+		case *ColorParameter:
+			oldColor := fieldValue.Value
+
+			// Generate a random hue (0-360), high saturation (0.7-1.0), and high value (0.7-1.0)
+			h := rand.Float64() * 360
+			s := 0.7 + rand.Float64()*0.3
+			v := 0.7 + rand.Float64()*0.3
+
+			// Convert HSV to RGB
+			r, g, b := HSVtoRGB(h, s, v)
+
+			fieldValue.Value = Color{
+				R: colorPigment(r * 255),
+				G: colorPigment(g * 255),
+				B: colorPigment(b * 255),
+				W: 0, // Keep W at 0
+			}
+
+			fmt.Printf("  %s.%s: RGB(%d,%d,%d) -> RGB(%d,%d,%d) (HSV: %.1f,%.1f,%.1f)\n",
+				patternName, fieldName,
+				oldColor.R, oldColor.G, oldColor.B,
+				fieldValue.Value.R, fieldValue.Value.G, fieldValue.Value.B,
+				h, s, v)
+		default:
+			fmt.Printf("  %s.%s type %T doesn't have randomization implemented\n",
+				patternName, fieldName, fieldValue)
 		}
 	}
 }

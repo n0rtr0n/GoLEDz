@@ -78,7 +78,7 @@ func RGBtoHSV(r, g, b float64) (float64, float64, float64) {
 	return h, s, v
 }
 
-// Apply gamma correction to a color value
+// apply gamma correction to a color value
 func applyGamma(value float64, gamma float64) float64 {
 	return math.Pow(value/255.0, gamma) * 255.0
 }

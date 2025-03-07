@@ -195,3 +195,9 @@ func floatPointer(value float64) *float64 {
 func intPointer(value int) *int {
 	return &value
 }
+
+func distanceBetweenPoints(p1 Point, p2 Point) float64 {
+	dx := float64(p1.X - p2.X)
+	dy := float64(p1.Y - p2.Y)
+	return math.Sqrt(dx*dx + dy*dy)
+}

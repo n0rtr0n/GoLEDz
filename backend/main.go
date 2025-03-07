@@ -84,8 +84,8 @@ func main() {
 	*pixels = append(*pixels, *buildTuskSegment(32, 1, 460, 545, 315, tusk_sections, tuskPixelType, BRG)...)
 
 	pixelMap := PixelMap{
-		// pixels: buildPixelGrid(),
-		pixels: pixels,
+		pixels: buildPixelGrid(),
+		// pixels: pixels,
 		// pixels: build2ChannelsOfPixels(),
 	}
 
@@ -113,10 +113,10 @@ func main() {
 		log.Fatal("no patterns registered")
 	}
 
-	// Create default options
+	// create default options
 	options := DefaultOptions()
 
-	// Create controller with initial pattern
+	// create controller with initial pattern
 	controller := NewPixelController(
 		universes,
 		errorTracker,
@@ -126,12 +126,12 @@ func main() {
 		*options,
 	)
 
-	// Create server config
+	// create server config
 	serverConfig := &ServerConfig{
 		Options: *options,
 	}
 
-	// Create server
+	// create server
 	server := NewLEDServer(controller, &pixelMap, patterns, serverConfig)
 
 	// start the web server first

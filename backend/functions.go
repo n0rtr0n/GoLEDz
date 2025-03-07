@@ -144,8 +144,8 @@ func buildTuskSegment(universe uint16, startingChannelNumber uint16, xStart int1
 	xPos := xStart
 	yPos := yStart
 	channelPosition := startingChannelNumber
-	pixelsSpacing := int16(5)
-	totalPixels := int16(60)
+	pixelsSpacing := int16(4)
+	totalPixels := int16(120)
 
 	for i := int16(0); i < totalPixels; i++ {
 		pixels = append(pixels, Pixel{

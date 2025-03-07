@@ -142,7 +142,7 @@ func registerPatterns(pixelMap *PixelMap) map[string]Pattern {
 			Stripes: IntParameter{
 				Min:   intPointer(0),
 				Max:   10,
-				Value: 1,
+				Value: 3,
 				Type:  TYPE_INT,
 			},
 		},

@@ -84,8 +84,8 @@ func main() {
 	*pixels = append(*pixels, *buildTuskSegment(32, 1, 460, 545, 315, tusk_sections, tuskPixelType, BRG)...)
 
 	pixelMap := PixelMap{
-		pixels: buildPixelGrid(),
-		// pixels: pixels,
+		// pixels: buildPixelGrid(),
+		pixels: pixels,
 		// pixels: build2ChannelsOfPixels(),
 	}
 

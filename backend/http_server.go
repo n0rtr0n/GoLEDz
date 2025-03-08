@@ -95,6 +95,8 @@ func (s *LEDServer) SetupRoutes() *http.ServeMux {
 	// options endpoints
 	mux.HandleFunc("GET /options", s.handleGetOptions)
 	mux.HandleFunc("PUT /options/{option}", s.handleUpdateOption)
+	mux.HandleFunc("POST /options/reset", s.handleResetOptions)
+	mux.HandleFunc("POST /options/resetColorCorrection", s.handleResetColorCorrection)
 
 	return mux
 }
@@ -239,26 +241,6 @@ func (s *LEDServer) handleGetPatterns(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// Add this helper function to ensure W is always 0 in color values
-func ensureZeroW(data map[string]interface{}) {
-	// Check for direct color values
-	if colorValue, ok := data["value"].(map[string]interface{}); ok {
-		colorValue["w"] = 0
-	}
-
-	// Check for parameters that might contain colors
-	if params, ok := data["parameters"].(map[string]interface{}); ok {
-		// Check common color parameter names
-		for _, colorKey := range []string{"color", "color1", "color2", "backgroundColor", "foregroundColor"} {
-			if colorParam, ok := params[colorKey].(map[string]interface{}); ok {
-				if colorValue, ok := colorParam["value"].(map[string]interface{}); ok {
-					colorValue["w"] = 0
-				}
-			}
-		}
-	}
-}
-
 func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) {
 	// Extract pattern name from URL path
 	pathParts := r.URL.Path
@@ -294,6 +276,10 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 	// Create a new pattern update request
 	updateRequest := pattern.GetPatternUpdateRequest()
 
+	// Store previous parameters for logging
+	previousParams := updateRequest.GetParameters()
+	previousParamsJSON, _ := json.Marshal(previousParams)
+
 	// Convert the processed request data back to JSON
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
@@ -306,6 +292,11 @@ func (s *LEDServer) handleUpdatePattern(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Log the changes
+	newParamsJSON, _ := json.Marshal(updateRequest.GetParameters())
+	log.Printf("Pattern updated: %s\nPrevious parameters: %s\nNew parameters: %s",
+		patternName, previousParamsJSON, newParamsJSON)
 
 	// Update the pattern
 	if err := s.controller.UpdatePattern(patternName, updateRequest); err != nil {
@@ -351,10 +342,21 @@ func (s *LEDServer) handleSetColorMask(w http.ResponseWriter, r *http.Request) {
 	// only try to decode parameters if there's a request body
 	if r.ContentLength > 0 {
 		parameters := mask.GetPatternUpdateRequest()
+
+		// Store previous parameters for logging
+		previousParams := parameters.GetParameters()
+		previousParamsJSON, _ := json.Marshal(previousParams)
+
 		if err := json.NewDecoder(r.Body).Decode(&parameters); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		// Log the changes
+		newParamsJSON, _ := json.Marshal(parameters.GetParameters())
+		log.Printf("Color mask updated: %s\nPrevious parameters: %s\nNew parameters: %s",
+			maskName, previousParamsJSON, newParamsJSON)
+
 		if err := mask.UpdateParameters(parameters.GetParameters()); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -412,6 +414,41 @@ func (s *LEDServer) handleUpdateOption(w http.ResponseWriter, r *http.Request) {
 	s.controller.UpdateOptions(s.options)
 
 	// return the updated options
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.options)
+}
+
+// handleResetOptions resets all options to their default values
+func (s *LEDServer) handleResetOptions(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Reset options to defaults
+	s.options.ResetToDefaults()
+
+	// Update the controller with the reset options
+	s.controller.UpdateOptions(s.options)
+
+	// Return the reset options
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.options)
+}
+
+// handleResetColorCorrection resets color correction options to their default values
+func (s *LEDServer) handleResetColorCorrection(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Get sections from the controller
+	sections := s.controller.GetSections()
+
+	// Reset color correction to defaults
+	s.options.ResetColorCorrection(sections)
+
+	// Update the controller with the reset options
+	s.controller.UpdateOptions(s.options)
+
+	// Return the reset options
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(s.options)
 }

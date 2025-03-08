@@ -25,8 +25,8 @@ func main() {
 		"all":   {name: "all", label: "All"},
 		"limbs": {name: "limbs", label: "Limbs"},
 		"torso": {name: "torso", label: "Torso"},
-		"head":  {name: "head", label: "head"},
-		"tusks": {name: "tusks", label: "tusks"},
+		"head":  {name: "head", label: "Head"},
+		"tusks": {name: "tusks", label: "Tusks"},
 	}
 
 	limb_sections := []Section{
@@ -115,6 +115,9 @@ func main() {
 
 	// create default options
 	options := DefaultOptions()
+
+	// Add color correction options based on defined sections
+	options.AddColorCorrectionOptions(sections)
 
 	// create controller with initial pattern
 	controller := NewPixelController(

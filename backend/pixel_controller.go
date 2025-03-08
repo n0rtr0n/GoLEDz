@@ -123,13 +123,16 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 
 		// write color values to consecutive channels based on color ordering
 		if pos+uint16(channelsPerPixel)-1 < 512 {
+			// Apply color correction based on pixel's sections
+			correctedColor := pc.applyColorCorrection(pixel.color, pixel.sections)
+
 			// map the color values according to the pixel's color order
 			var colorValues [4]byte
 
-			// Use the already-adjusted color values, but force W to 0
-			colorValues[0] = byte(pixel.color.R)
-			colorValues[1] = byte(pixel.color.G)
-			colorValues[2] = byte(pixel.color.B)
+			// Use the corrected color values, but force W to 0
+			colorValues[0] = byte(correctedColor.R)
+			colorValues[1] = byte(correctedColor.G)
+			colorValues[2] = byte(correctedColor.B)
 			if pixel.pixelType == PixelRGBW {
 				colorValues[3] = 0 // Always force W to 0
 			}
@@ -162,13 +165,65 @@ func (pc *PixelController) prepareUniverseData(universe uint16) []byte {
 			}
 
 			// write the remapped values to the output buffer
-			for i := range channelsPerPixel {
+			for i := 0; i < channelsPerPixel; i++ {
 				bytes[pos+uint16(i)] = colorValues[i]
 			}
 		}
 	}
 
 	return bytes
+}
+
+// applyColorCorrection applies section-specific color correction
+func (pc *PixelController) applyColorCorrection(color Color, sections []Section) Color {
+	// Get color correction options
+	correctionOpt, err := pc.options.GetOption("colorCorrection")
+	if err != nil {
+		return color // Return original if option not found
+	}
+
+	colorCorrectionOpt, ok := correctionOpt.(*ColorCorrectionOption)
+	if !ok {
+		return color // Return original if option is not the right type
+	}
+
+	// Check if color correction is enabled
+	if !colorCorrectionOpt.Value.Enabled {
+		return color
+	}
+
+	// Start with original color
+	correctedColor := color
+
+	// Apply correction for each section the pixel belongs to
+	for _, section := range sections {
+		// Look for section-specific correction factors
+		sectionCorrection, exists := colorCorrectionOpt.Value.Sections[section.name]
+		if exists {
+			// Apply correction factors (clamping to valid range)
+			rFactor := sectionCorrection.Red.Value / 100.0
+			gFactor := sectionCorrection.Green.Value / 100.0
+			bFactor := sectionCorrection.Blue.Value / 100.0
+
+			r := float64(correctedColor.R) * rFactor
+			g := float64(correctedColor.G) * gFactor
+			b := float64(correctedColor.B) * bFactor
+
+			// Clamp values to valid range
+			correctedColor.R = colorPigment(math.Min(255, math.Max(0, r)))
+			correctedColor.G = colorPigment(math.Min(255, math.Max(0, g)))
+			correctedColor.B = colorPigment(math.Min(255, math.Max(0, b)))
+		}
+	}
+
+	// Apply gamma correction as the final step
+	if colorCorrectionOpt.Value.Gamma.Value != 1.0 {
+		correctedColor.R = colorPigment(applyGamma(float64(correctedColor.R), colorCorrectionOpt.Value.Gamma.Value))
+		correctedColor.G = colorPigment(applyGamma(float64(correctedColor.G), colorCorrectionOpt.Value.Gamma.Value))
+		correctedColor.B = colorPigment(applyGamma(float64(correctedColor.B), colorCorrectionOpt.Value.Gamma.Value))
+	}
+
+	return correctedColor
 }
 
 // updates all universes with current pixel data
@@ -529,6 +584,9 @@ func (c *PixelController) UpdatePattern(patternName string, request PatternUpdat
 		return fmt.Errorf("pattern %s not found", patternName)
 	}
 
+	// Log the pattern change
+	log.Printf("Updating pattern: %s", patternName)
+
 	// if updating same pattern, just update parameters directly
 	if c.currentPattern != nil && c.currentPattern.GetName() == patternName {
 		c.isParameterUpdate = true
@@ -540,6 +598,12 @@ func (c *PixelController) UpdatePattern(patternName string, request PatternUpdat
 	if err := pattern.UpdateParameters(request.GetParameters()); err != nil {
 		return err
 	}
+
+	// Log pattern change if switching patterns
+	if c.currentPattern != nil {
+		log.Printf("Switching pattern from %s to %s", c.currentPattern.GetName(), patternName)
+	}
+
 	return c.SetPattern(pattern)
 }
 
@@ -673,4 +737,21 @@ func (pc *PixelController) UpdateOptions(options Options) {
 	pc.patternMu.Unlock()
 
 	pc.SetTransitionDuration(options.TransitionDuration)
+}
+
+// GetSections returns the sections used for color correction
+func (pc *PixelController) GetSections() map[string]Section {
+	// Create a map of sections from the pixel map
+	sections := make(map[string]Section)
+
+	// Extract unique sections from pixels
+	for _, pixel := range *pc.pixelMap.pixels {
+		for _, section := range pixel.sections {
+			if _, exists := sections[section.name]; !exists {
+				sections[section.name] = section
+			}
+		}
+	}
+
+	return sections
 }
